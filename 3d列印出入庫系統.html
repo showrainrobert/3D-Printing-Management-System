@@ -1,0 +1,641 @@
+html_code = """<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D列印完整管理系統</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { color: #2c3e50; text-align: center; font-size: 26px; margin-bottom: 25px;}
+        h2 { color: #34495e; font-size: 18px; margin-top: 0; margin-bottom: 15px;}
+        
+        label { display: block; margin-top: 10px; font-weight: 600; font-size: 13px; color: #555; margin-bottom: 6px;}
+        input[type="text"], input[type="password"], input[type="number"], input[type="date"], select { width: 100%; padding: 10px 12px; border: 1px solid #dce1e6; border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: #fff; transition: border-color 0.2s;}
+        input:focus, select:focus { border-color: #28a745; outline: none; }
+        
+        button { padding: 10px 20px; border: none; border-radius: 6px; font-size: 15px; cursor: pointer; color: white; font-weight: bold; transition: 0.2s; }
+        button:active { transform: scale(0.98); }
+        .btn-primary { background-color: #3498db; width: 100%; margin-top: 15px;}
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #218838; }
+        .btn-warning { background-color: #f39c12; width: 100%; margin-top: 15px;}
+        .btn-danger { background-color: #dc3545; padding: 6px 12px; font-size: 12px; border-radius: 4px;}
+        .btn-dark { background-color: #34495e; width: 100%; margin-top: 10px;}
+        .btn-dark:hover { background-color: #2c3e50; }
+        
+        .btn-toggle-unsold { background-color: #f39c12; padding: 6px 12px; width: auto; margin: 0; font-size: 13px; border-radius: 20px;}
+        .btn-toggle-sold { background-color: #27ae60; padding: 6px 12px; width: auto; margin: 0; font-size: 13px; border-radius: 20px;}
+
+        .form-row { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 15px; }
+        .form-col { flex: 1; min-width: 160px; }
+        
+        .card { background: #fff; padding: 20px; margin-top: 20px; border: 1px solid #e1e8ed; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
+        .inventory-card { border-left: 5px solid #28a745; }
+        .record-card { border-left: 5px solid #3498db; }
+        .sold-card { border-left-color: #27ae60 !important; background-color: #f9fff9 !important;}
+        .hardware-card { border-left: 5px solid #f39c12; }
+        .deleted-card { border-left: 5px solid #95a5a6; background-color: #fafafa; }
+        .report-card { border-left: 5px solid #8e44ad; }
+        .settings-card { border-left: 5px solid #34495e; }
+        
+        .table-container { overflow-x: auto; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        th, td { text-align: left; padding: 12px 15px; border-bottom: 1px solid #f0f0f0; font-size: 14px; }
+        th { color: #666; font-weight: 600; background-color: #fcfcfc; }
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .status-ok { background-color: #e9f7ef; color: #27ae60; }
+        .status-low { background-color: #fdedec; color: #c0392b; }
+
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;}
+        .stat-box { background: #e8f4f8; padding: 20px 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
+        .stat-box.revenue { background: #e9f7ef; }
+        .stat-box.expense { background: #fdedec; }
+        .stat-box.profit { background: #f4f6f8; border: 1px solid #dce1e6;}
+        .stat-value { font-size: 24px; font-weight: bold; margin-top: 8px;}
+        .stat-label { font-size: 13px; color: #666; font-weight: 600;}
+        
+        .tab-container { display: flex; margin-bottom: 25px; background: #eef2f5; border-radius: 8px; overflow: hidden; padding: 4px; flex-wrap: wrap;}
+        .tab-btn { flex: 1; min-width: 100px; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; color: #6c7a89; border-radius: 6px; transition: 0.2s; font-size: 14px;}
+        .tab-btn.active { background: #fff; color: #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .checkbox-container { display: flex; align-items: center; margin-top: 10px; background: #fdfaf2; padding: 10px; border-radius: 6px; border: 1px solid #f39c12;}
+        .checkbox-container input { width: auto; margin-right: 10px; transform: scale(1.2); }
+        .checkbox-container label { margin-top: 0; cursor: pointer; color: #d35400; font-weight: bold;}
+
+        /* 登入遮罩 */
+        #loginOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(44, 62, 80, 0.95); z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .login-box {
+            background: white; padding: 40px 30px; border-radius: 12px;
+            width: 90%; max-width: 350px; text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        .user-badge {
+            background: #34495e; color: white; padding: 5px 15px; border-radius: 20px;
+            font-size: 13px; display: inline-block; margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- ================= 登入畫面 ================= -->
+    <div id="loginOverlay">
+        <div class="login-box">
+            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">系統登入</h2>
+            <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 25px;">請輸入您的專屬名稱與密碼</p>
+            
+            <label style="text-align: left;">您的名稱</label>
+            <input type="text" id="loginName" placeholder="例如：老闆" style="margin-bottom: 15px;">
+            
+            <label style="text-align: left;">專屬密碼</label>
+            <input type="password" id="loginPwd" placeholder="請輸入密碼" style="margin-bottom: 20px;">
+            
+            <button class="btn-primary" onclick="login()" style="margin-top: 0;">登入系統</button>
+            <p style="font-size: 12px; color: #95a5a6; margin-top: 15px;">提示：可按 Enter 鍵快速登入</p>
+        </div>
+    </div>
+
+    <!-- ================= 主系統 ================= -->
+    <div class="container" id="mainSystem" style="display: none;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 style="margin-bottom: 10px;">3D列印完整管理系統</h1>
+            <div class="user-badge">👤 目前登入：<span id="currentUserDisplay"></span></div>
+        </div>
+        
+        <div class="tab-container">
+            <div class="tab-btn" onclick="switchTab('printTab', this)">🖨️ 列印與結帳</div>
+            <div class="tab-btn active" onclick="switchTab('inventoryTab', this)">📦 耗材入庫</div>
+            <div class="tab-btn" onclick="switchTab('hardwareTab', this)">🛠️ 設備支出</div>
+            <div class="tab-btn" onclick="switchTab('reportTab', this)">📊 報表</div>
+            <div class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ 公式設定</div>
+        </div>
+
+        <!-- 參數與公式設定頁籤 -->
+        <div id="settingsTab" class="tab-content">
+            <div class="card settings-card">
+                <h2>⚙️ 成本與公式參數設定</h2>
+                <div class="form-row">
+                    <div class="form-col"><label>耗電費率 (NT$/小時)</label><input type="number" id="setPower" step="0.1"></div>
+                    <div class="form-col"><label>固定攤提/損耗 (NT$)</label><input type="number" id="setFixed" step="0.01"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>預設利潤加成 (%)</label><input type="number" id="setProfit"></div>
+                    <div class="form-col"><label>營業稅率/發票稅 (%)</label><input type="number" id="setTax"></div>
+                </div>
+                <button class="btn-dark" onclick="saveSettings()">💾 儲存設定</button>
+            </div>
+        </div>
+
+        <!-- 耗材入庫頁籤 -->
+        <div id="inventoryTab" class="tab-content active">
+            <div class="card inventory-card">
+                <h2>📦 耗材入庫</h2>
+                <div class="form-row">
+                    <div class="form-col" style="flex: 2;">
+                        <label>材質</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="matType" onchange="toggleCustomType()" style="flex: 1;">
+                                <option value="PLA">PLA</option><option value="PETG">PETG</option><option value="ABS">ABS</option>
+                                <option value="TPU">TPU</option><option value="PC">PC</option><option value="其他">其他 (自行輸入)...</option>
+                            </select>
+                            <input type="text" id="customType" placeholder="輸入材質" style="display: none; flex: 1;">
+                        </div>
+                    </div>
+                    <div class="form-col" style="flex: 2.5;">
+                        <label>顏色</label>
+                        <div style="display: flex; gap: 10px;">
+                            <select id="matColor" onchange="toggleCustomColor()" style="flex: 1;">
+                                <option value="Bambu基本色-黑">Bambu基本色-黑</option><option value="Bambu基本色-白">Bambu基本色-白</option>
+                                <option value="黑色">黑色</option><option value="白色">白色</option>
+                                <option value="其他">其他 (自行輸入)...</option>
+                            </select>
+                            <input type="text" id="customColor" placeholder="輸入顏色" style="display: none; flex: 1;">
+                        </div>
+                    </div>
+                    <div class="form-col" style="flex: 1.5;">
+                        <label>購入日期</label><input type="date" id="matDate">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>購入總價 (NT$)</label><input type="number" id="matPrice" placeholder="450"></div>
+                    <div class="form-col"><label>初始重量 (g)</label><input type="number" id="matWeight" value="1000"></div>
+                </div>
+                <div style="text-align: right; margin-top: 5px;">
+                    <button class="btn-success" onclick="addFilament()">加入庫存</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 15px;">
+                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">目前庫存狀態</h3>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>耗材名稱</th><th>單位成本 (NT$/G)</th><th>剩餘重量 (G)</th><th>狀態</th><th>操作</th></tr>
+                        </thead>
+                        <tbody id="inventoryList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 任務與紀錄頁籤 -->
+        <div id="printTab" class="tab-content">
+            <div class="card record-card">
+                <h2>新增列印任務</h2>
+                <div class="form-row">
+                    <div class="form-col" style="flex: 2;">
+                        <label>選擇使用耗材</label><select id="filamentSelect"><option value="">請先至「耗材入庫」新增資料...</option></select>
+                    </div>
+                    <div class="form-col" style="flex: 2;">
+                        <label>模型名稱</label><input type="text" id="modelName" placeholder="例如：關節龍">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>消耗重量 (g)</label><input type="number" id="weight"></div>
+                    <div class="form-col"><label>列印時間 (小時)</label><input type="number" id="time"></div>
+                    <div class="form-col">
+                        <label>商品狀態</label>
+                        <select id="printStatus">
+                            <option value="unsold">📦 未賣出 (攤位現貨)</option>
+                            <option value="sold">💰 直接確認出售 (客製單)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="checkbox-container">
+                    <input type="checkbox" id="applyTax" onchange="previewCost(true)">
+                    <label for="applyTax">📑 這是一筆 B2B 企業訂單 (自動加上營業稅與發票成本)</label>
+                </div>
+                <div id="previewBox" style="display:none; background: #e8f4f8; padding: 15px; border-radius: 6px; margin-top: 15px; border-left: 4px solid #3498db; text-align: center;">
+                    <div style="color: #555; font-size: 13px; margin-bottom: 5px;" id="previewDetail"></div>
+                    <strong style="color: #2c3e50; font-size: 16px;">最終建議定價：</strong>
+                    <span id="previewCostDisplay" style="font-size: 24px; font-weight: bold; color: #e74c3c; margin-left: 10px;">NT$ 0</span>
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 15px;">
+                    <button class="btn-primary" style="flex: 1; background-color: #7f8c8d; margin-top:0;" onclick="previewCost(false)">🔍 預先試算</button>
+                    <button class="btn-success" style="flex: 2; margin-top:0;" onclick="addPrintRecord()">💾 確認儲存並扣除庫存</button>
+                </div>
+            </div>
+            <div class="card">
+                <h2>列印與銷售清單</h2>
+                <div id="printRecordList" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- 設備維護支出頁籤 -->
+        <div id="hardwareTab" class="tab-content">
+            <div class="card hardware-card">
+                <h2>新增設備/零件支出</h2>
+                <div class="form-row">
+                    <div class="form-col" style="flex: 2;">
+                        <label>購買項目名稱</label><input type="text" id="hwName" placeholder="例如：硬化鋼噴頭">
+                    </div>
+                    <div class="form-col">
+                        <label>花費金額 (NT$)</label><input type="number" id="hwPrice">
+                    </div>
+                </div>
+                <button class="btn-warning" onclick="addHardware()">💸 新增支出紀錄</button>
+            </div>
+            
+            <div class="card">
+                <h2>購買紀錄清單</h2>
+                <div id="hardwareList" style="margin-top: 15px;"></div>
+            </div>
+            
+            <div class="card deleted-card" style="margin-top: 20px;">
+                <h2 style="color: #7f8c8d;">🗑️ 設備刪除紀錄 (備查)</h2>
+                <p style="font-size: 12px; color: #95a5a6; margin-top: -10px;">以下紀錄不列入報表統計，僅供核對是誰刪除的。</p>
+                <div id="deletedHardwareList" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+
+        <!-- 報表頁籤 -->
+        <div id="reportTab" class="tab-content">
+            <div class="card report-card">
+                <h2>📊 財務與營運報表總覽</h2>
+                <div class="form-row" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+                    <div class="form-col">
+                        <label>篩選時間範圍 (影響下方統計與匯出)</label>
+                        <select id="reportTimeRange" onchange="updateReportStats()">
+                            <option value="all">全部紀錄</option><option value="this_month">本月</option><option value="this_year">本年度</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-box revenue"><div class="stat-label">💰 已實現總營收</div><div class="stat-value" id="reportSoldRevenue" style="color: #27ae60;">0</div></div>
+                    <div class="stat-box"><div class="stat-label">📦 待售現貨總價估值</div><div class="stat-value" id="reportUnsoldCost" style="color: #f39c12;">0</div></div>
+                </div>
+                <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                    <div class="stat-box expense"><div class="stat-label">🛠️ 設備與維護總支出</div><div class="stat-value" id="reportHardwareCost" style="color: #c0392b;">0</div></div>
+                    <div class="stat-box profit"><div class="stat-label">📈 淨利潤預估</div><div class="stat-value" id="reportNetProfit" style="color: #2c3e50;">0</div></div>
+                </div>
+                <hr style="border: 0; height: 1px; background: #eee; margin: 25px 0;">
+                <h2>📥 匯出 Excel (CSV) 報表</h2>
+                <div style="display: flex; gap: 15px;">
+                    <button class="btn-dark" onclick="exportCSV('print')">📄 匯出列印紀錄</button>
+                    <button class="btn-dark" style="background-color: #8e44ad;" onclick="exportCSV('hardware')">📄 匯出設備支出</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ================= ★ 多帳號獨立密碼設定區 ★ =================
+        const ACCOUNTS = {
+            "robert": "1234",    // 使用者名稱: "老闆"，對應密碼: "boss123"
+            "neo": "1234",    // 使用者名稱: "小明"，對應密碼: "ming456"
+            "showrain": "1234"      // 您也可以新增更多的帳號在這裡
+        };
+        // 若要新增使用者，請依照上面格式加上："名稱": "專屬密碼" (記得加逗號)
+
+        let currentUser = "";
+
+        function login() {
+            const nameInput = document.getElementById('loginName').value.trim();
+            const pwdInput = document.getElementById('loginPwd').value;
+            
+            if(!nameInput) { alert("請輸入您的名稱！"); return; }
+            
+            // 檢查帳號是否存在
+            if(!ACCOUNTS.hasOwnProperty(nameInput)) {
+                alert("❌ 找不到此使用者名稱，請確認輸入是否正確！");
+                return;
+            }
+            
+            // 檢查該帳號的密碼是否正確
+            if(ACCOUNTS[nameInput] !== pwdInput) {
+                alert("❌ 密碼錯誤！請重新輸入。");
+                return;
+            }
+            
+            // 登入成功
+            currentUser = nameInput;
+            document.getElementById('currentUserDisplay').innerText = currentUser;
+            
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainSystem').style.display = 'block';
+        }
+
+        // ★ 加上 Enter 鍵監聽 ★
+        document.getElementById('loginName').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                document.getElementById('loginPwd').focus(); // 名稱輸入完按Enter，跳到密碼框
+            }
+        });
+
+        document.getElementById('loginPwd').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                login(); // 密碼輸入完按Enter，直接觸發登入
+            }
+        });
+
+
+        // 資料初始化
+        let filaments = JSON.parse(localStorage.getItem('kr_filaments')) || [];
+        let printRecords = JSON.parse(localStorage.getItem('kr_printRecords')) || [];
+        let hardwareRecords = JSON.parse(localStorage.getItem('kr_hardwareRecords')) || [];
+        let deletedHardwareRecords = JSON.parse(localStorage.getItem('kr_deletedHardwareRecords')) || [];
+        
+        let sysSettings = JSON.parse(localStorage.getItem('kr_settings')) || { power: 9, fixed: 7.11, profit: 20, tax: 5 };
+
+        function loadSettingsToUI() {
+            document.getElementById('setPower').value = sysSettings.power;
+            document.getElementById('setFixed').value = sysSettings.fixed;
+            document.getElementById('setProfit').value = sysSettings.profit;
+            document.getElementById('setTax').value = sysSettings.tax;
+        }
+
+        function saveSettings() {
+            sysSettings.power = parseFloat(document.getElementById('setPower').value) || 0;
+            sysSettings.fixed = parseFloat(document.getElementById('setFixed').value) || 0;
+            sysSettings.profit = parseFloat(document.getElementById('setProfit').value) || 0;
+            sysSettings.tax = parseFloat(document.getElementById('setTax').value) || 0;
+            localStorage.setItem('kr_settings', JSON.stringify(sysSettings));
+            loadSettingsToUI();
+            alert("✅ 設定已儲存！");
+        }
+
+        document.getElementById('matDate').valueAsDate = new Date();
+        loadSettingsToUI(); 
+
+        function switchTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active');
+            btnElement.classList.add('active');
+            if (tabId === 'reportTab') updateReportStats(); 
+        }
+
+        function getFullDateString() { return new Date().toLocaleString('zh-TW', {hour12: false}); }
+
+        function toggleCustomType() {
+            const sel = document.getElementById('matType'), inp = document.getElementById('customType');
+            inp.style.display = sel.value === '其他' ? 'block' : 'none'; if(sel.value==='其他') inp.focus();
+        }
+        function toggleCustomColor() {
+            const sel = document.getElementById('matColor'), inp = document.getElementById('customColor');
+            inp.style.display = sel.value === '其他' ? 'block' : 'none'; if(sel.value==='其他') inp.focus();
+        }
+
+        function addFilament() {
+            let type = document.getElementById('matType').value;
+            let color = document.getElementById('matColor').value;
+            const price = parseFloat(document.getElementById('matPrice').value);
+            const weight = parseFloat(document.getElementById('matWeight').value);
+            const selectedDate = document.getElementById('matDate').value;
+
+            if (type === '其他') { type = document.getElementById('customType').value.trim(); if (!type) return alert("請輸入材質！"); }
+            if (color === '其他') { color = document.getElementById('customColor').value.trim(); if (!color) return alert("請輸入顏色！"); }
+            if(isNaN(weight) || isNaN(price) || !selectedDate) return alert("請填寫完整資訊！");
+
+            const dateStr = selectedDate.substring(5).replace('-', ''); 
+            filaments.push({
+                id: Date.now(), name: `${type}-${color}-${dateStr}`,
+                initialWeight: weight, currentWeight: weight, totalPrice: price,
+                costPerGram: price / weight, date: selectedDate 
+            });
+
+            saveData(); renderFilaments();
+            document.getElementById('matPrice').value = '';
+            alert("✅ 耗材已加入庫存！");
+        }
+
+        function deleteFilament(id) {
+            if(confirm("確定要刪除這筆耗材庫存嗎？")) {
+                filaments = filaments.filter(f => f.id !== id);
+                saveData(); renderFilaments();
+            }
+        }
+
+        function renderFilaments() {
+            const tbody = document.getElementById('inventoryList');
+            tbody.innerHTML = '';
+            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">無庫存</td></tr>'; 
+            
+            filaments.forEach(f => {
+                const statusHtml = f.currentWeight <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
+                tbody.innerHTML += `<tr>
+                    <td><strong>${f.name}</strong><br><span style="font-size:12px; color:#888;">入庫日: ${f.date}</span></td>
+                    <td>${f.costPerGram.toFixed(3)}</td>
+                    <td><strong>${f.currentWeight.toFixed(0)}</strong> / ${f.initialWeight}</td>
+                    <td>${statusHtml}</td>
+                    <td><button class="btn-danger" onclick="deleteFilament(${f.id})">刪除</button></td>
+                </tr>`;
+            });
+            updateSelectOptions(); 
+        }
+
+        function updateSelectOptions() {
+            const sel = document.getElementById('filamentSelect');
+            sel.innerHTML = '<option value="">請選擇使用的耗材...</option>';
+            filaments.filter(f => f.currentWeight > 0).forEach(f => {
+                sel.innerHTML += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`;
+            });
+        }
+
+        function calculateCost(weightUsed, timeUsed, costPerGram, applyTax) {
+            const baseCost = (weightUsed * costPerGram) + (timeUsed * sysSettings.power) + sysSettings.fixed;
+            const preTaxPrice = baseCost * (1 + (sysSettings.profit / 100));
+            return { baseCost, preTaxPrice, finalPrice: preTaxPrice * (applyTax ? (1 + (sysSettings.tax / 100)) : 1) };
+        }
+
+        function previewCost(isFromCheckbox = false) {
+            const filId = document.getElementById('filamentSelect').value;
+            const w = parseFloat(document.getElementById('weight').value);
+            const t = parseFloat(document.getElementById('time').value);
+            const applyTax = document.getElementById('applyTax').checked;
+
+            if(!filId || isNaN(w) || isNaN(t)) { if(!isFromCheckbox) alert("請填妥資料以試算！"); return; }
+            const f = filaments.find(x => x.id == filId); if(!f) return;
+
+            const calc = calculateCost(w, t, f.costPerGram, applyTax);
+            document.getElementById('previewBox').style.display = 'block';
+            document.getElementById('previewDetail').innerHTML = `純成本: $${calc.baseCost.toFixed(1)} ➔ 加利潤: $${calc.preTaxPrice.toFixed(1)}` + (applyTax ? ` <br><span style="color:#e67e22; font-weight:bold;">(+ 稅金 ${sysSettings.tax}%)</span>` : '');
+            document.getElementById('previewCostDisplay').innerText = `NT$ ${Math.ceil(calc.finalPrice)}`; 
+        }
+
+        function addPrintRecord() {
+            const filId = document.getElementById('filamentSelect').value;
+            const modelName = document.getElementById('modelName').value;
+            const w = parseFloat(document.getElementById('weight').value);
+            const t = parseFloat(document.getElementById('time').value);
+            const status = document.getElementById('printStatus').value; 
+            const applyTax = document.getElementById('applyTax').checked;
+
+            if(!filId || !modelName || isNaN(w) || isNaN(t)) return alert("請填妥資料！");
+            const f = filaments.find(x => x.id == filId); if(!f) return;
+            if(f.currentWeight < w) return alert("庫存不足！");
+
+            f.currentWeight -= w;
+            const calc = calculateCost(w, t, f.costPerGram, applyTax);
+
+            printRecords.push({
+                id: Date.now(), modelName: modelName, filamentName: f.name,
+                weightUsed: w, timeUsed: t, cost: Math.ceil(calc.finalPrice), taxApplied: applyTax, 
+                status: status, date: getFullDateString(), timestamp: new Date().getTime() 
+            });
+
+            saveData(); renderPrintRecords(); renderFilaments(); 
+            document.getElementById('modelName').value = ''; document.getElementById('weight').value = '';
+            document.getElementById('time').value = ''; document.getElementById('previewBox').style.display = 'none';
+            alert("✅ 儲存成功！");
+        }
+
+        function toggleStatus(id) {
+            const r = printRecords.find(x => x.id === id);
+            if(r) { r.status = r.status === 'unsold' ? 'sold' : 'unsold'; saveData(); renderPrintRecords(); updateReportStats(); }
+        }
+
+        function deleteRecord(id) {
+            if(confirm("確定刪除此紀錄？(耗材不自動補回)")) {
+                printRecords = printRecords.filter(x => x.id !== id); saveData(); renderPrintRecords(); updateReportStats();
+            }
+        }
+
+        function renderPrintRecords() {
+            const list = document.getElementById('printRecordList'); list.innerHTML = '';
+            [...printRecords].reverse().forEach(r => {
+                if (!r.status) r.status = 'unsold'; 
+                const isSold = r.status === 'sold';
+                const taxTag = r.taxApplied ? `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:5px;">含稅B2B</span>` : '';
+                list.innerHTML += `
+                    <div class="card ${isSold ? 'sold-card' : ''}" style="border-left: 4px solid #3498db; margin-bottom: 15px; padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+                            <span style="font-weight: bold; font-size: 16px; color: #2c3e50;">${r.modelName} ${taxTag}</span>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="${isSold ? 'btn-toggle-sold' : 'btn-toggle-unsold'}" onclick="toggleStatus(${r.id})">${isSold ? '💰 已賣出' : '📦 未賣出'}</button>
+                                <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size:13px;" onclick="deleteRecord(${r.id})">刪除</button>
+                            </div>
+                        </div>
+                        <div style="font-size: 12px; color: #95a5a6; margin-bottom: 8px;">${r.date}</div>
+                        <div style="font-size: 14px; color: #555; line-height: 1.6;">
+                            耗材：${r.filamentName} (${r.weightUsed}g) | 工時：${r.timeUsed}h<br>
+                            <strong style="color:#2c3e50; font-size: 15px;">系統定價：NT$ ${r.cost}</strong>
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function addHardware() {
+            const name = document.getElementById('hwName').value;
+            const price = parseFloat(document.getElementById('hwPrice').value);
+            if(!name || isNaN(price)) return alert("請填寫項目與金額！");
+
+            hardwareRecords.push({
+                id: Date.now(), name: name, price: price, date: getFullDateString(), timestamp: new Date().getTime()
+            });
+
+            saveData(); renderHardwareRecords(); updateReportStats(); 
+            document.getElementById('hwName').value = ''; document.getElementById('hwPrice').value = '';
+        }
+
+        function deleteHardware(id) {
+            const record = hardwareRecords.find(r => r.id === id);
+            if(!record) return;
+
+            if(confirm(`⚠️ 確定要刪除設備【${record.name}】嗎？\n(刪除後將從報表中扣除，並記錄由「${currentUser}」刪除)`)) {
+                hardwareRecords = hardwareRecords.filter(r => r.id !== id);
+                record.deletedBy = currentUser;
+                record.deletedAt = getFullDateString();
+                deletedHardwareRecords.push(record);
+                saveData(); renderHardwareRecords(); renderDeletedHardware(); updateReportStats(); 
+                alert(`✅ 刪除成功，已記錄至「設備刪除紀錄」。`);
+            }
+        }
+
+        function renderHardwareRecords() {
+            const list = document.getElementById('hardwareList'); list.innerHTML = '';
+            [...hardwareRecords].reverse().forEach(r => {
+                list.innerHTML += `
+                    <div style="background: #fdfaf2; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #f39c12; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${r.name}</strong> <span style="font-size:12px; color:#888;">(${r.date})</span><br>
+                            <strong style="color:#c0392b;">NT$ ${r.price.toFixed(0)}</strong>
+                        </div>
+                        <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size:13px;" onclick="deleteHardware(${r.id})">刪除</button>
+                    </div>`;
+            });
+        }
+
+        function renderDeletedHardware() {
+            const list = document.getElementById('deletedHardwareList'); 
+            list.innerHTML = '';
+            if(deletedHardwareRecords.length === 0) {
+                list.innerHTML = '<div style="color:#999; font-size: 13px;">目前沒有刪除紀錄。</div>'; return;
+            }
+            [...deletedHardwareRecords].reverse().forEach(r => {
+                list.innerHTML += `
+                    <div style="background: #fff; padding: 10px; border: 1px dashed #ccc; margin-bottom: 8px; border-radius: 4px;">
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
+                            <span style="text-decoration: line-through; color: #7f8c8d;">${r.name} (NT$ ${r.price})</span>
+                            <span style="font-size:12px; color:#e74c3c; font-weight:bold;">刪除者：${r.deletedBy}</span>
+                        </div>
+                        <div style="font-size:11px; color:#bdc3c7;">原本購買日: ${r.date} | 刪除時間: ${r.deletedAt}</div>
+                    </div>`;
+            });
+        }
+
+        function updateReportStats() {
+            const range = document.getElementById('reportTimeRange').value;
+            const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
+
+            let fPrints = printRecords, fHW = hardwareRecords;
+
+            if (range === 'this_month') {
+                fPrints = printRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear && new Date(r.timestamp||r.id).getMonth()===currentMonth);
+                fHW = hardwareRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear && new Date(r.timestamp||r.id).getMonth()===currentMonth);
+            } else if (range === 'this_year') {
+                fPrints = printRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear);
+                fHW = hardwareRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear);
+            }
+
+            let uCost = 0, sRev = 0, hCost = 0;
+            fPrints.forEach(r => r.status === 'sold' ? sRev+=r.cost : uCost+=r.cost);
+            fHW.forEach(r => hCost+=r.price);
+
+            document.getElementById('reportSoldRevenue').innerText = sRev.toFixed(0);
+            document.getElementById('reportUnsoldCost').innerText = uCost.toFixed(0);
+            document.getElementById('reportHardwareCost').innerText = hCost.toFixed(0);
+            document.getElementById('reportNetProfit').innerText = (sRev - hCost).toFixed(0);
+        }
+
+        function exportCSV(type) {
+            const range = document.getElementById('reportTimeRange').options[document.getElementById('reportTimeRange').selectedIndex].text;
+            let csvContent = "\uFEFF", filename = "";
+
+            if (type === 'print') {
+                csvContent += "模型名稱,使用耗材,消耗重量(g),列印時間(h),類型,系統定價(NT$),銷售狀態,紀錄日期\n";
+                printRecords.forEach(r => {
+                    csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`;
+                });
+                filename = `KR小舖_列印與銷售紀錄_${range}.csv`;
+            } else if (type === 'hardware') {
+                csvContent += "設備項目名稱,花費金額(NT$),紀錄日期\n";
+                hardwareRecords.forEach(r => csvContent += `"${r.name}",${r.price},"${r.date}"\n`);
+                filename = `KR小舖_設備支出紀錄_${range}.csv`;
+            }
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob));
+            link.setAttribute("download", filename); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        }
+
+        function saveData() {
+            localStorage.setItem('kr_filaments', JSON.stringify(filaments));
+            localStorage.setItem('kr_printRecords', JSON.stringify(printRecords));
+            localStorage.setItem('kr_hardwareRecords', JSON.stringify(hardwareRecords));
+            localStorage.setItem('kr_deletedHardwareRecords', JSON.stringify(deletedHardwareRecords)); 
+        }
+
+        renderFilaments(); renderPrintRecords(); renderHardwareRecords(); renderDeletedHardware();
+    </script>
+</body>
+</html>
+"""
+
+with open('/mnt/data/KR小舖_3D列印完整管理系統_多帳號與Enter登入.html', 'w', encoding='utf-8') as f:
+    f.write(html_code)
