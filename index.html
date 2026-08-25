@@ -1,9 +1,13 @@
-html_code = """<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D列印完整管理系統</title>
+    <title>KR小舖 - 3D列印雲端管理系統</title>
+    <!-- 引入 Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f4f6f8; color: #333; }
         .container { max-width: 900px; margin: 20px auto; background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
@@ -80,13 +84,22 @@ html_code = """<!DOCTYPE html>
             background: #34495e; color: white; padding: 5px 15px; border-radius: 20px;
             font-size: 13px; display: inline-block; margin-bottom: 15px;
         }
+
+        /* 雲端同步提示 */
+        #syncStatus {
+            position: fixed; top: 10px; right: 10px; background: #f39c12; color: white;
+            padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; display: none;
+        }
     </style>
 </head>
 <body>
+    <div id="syncStatus">🔄 雲端資料同步中...</div>
+
     <!-- ================= 登入畫面 ================= -->
     <div id="loginOverlay">
         <div class="login-box">
-            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">系統登入</h2>
+            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">KR小舖 雲端系統</h2>
             <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 25px;">請輸入您的專屬名稱與密碼</p>
             
             <label style="text-align: left;">您的名稱</label>
@@ -103,7 +116,7 @@ html_code = """<!DOCTYPE html>
     <!-- ================= 主系統 ================= -->
     <div class="container" id="mainSystem" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="margin-bottom: 10px;">3D列印完整管理系統</h1>
+            <h1 style="margin-bottom: 10px; color: #2980b9;">☁️ KR小舖 雲端管理系統</h1>
             <div class="user-badge">👤 目前登入：<span id="currentUserDisplay"></span></div>
         </div>
         
@@ -118,7 +131,7 @@ html_code = """<!DOCTYPE html>
         <!-- 參數與公式設定頁籤 -->
         <div id="settingsTab" class="tab-content">
             <div class="card settings-card">
-                <h2>⚙️ 成本與公式參數設定</h2>
+                <h2>⚙️ 成本與公式參數設定 (雲端同步)</h2>
                 <div class="form-row">
                     <div class="form-col"><label>耗電費率 (NT$/小時)</label><input type="number" id="setPower" step="0.1"></div>
                     <div class="form-col"><label>固定攤提/損耗 (NT$)</label><input type="number" id="setFixed" step="0.01"></div>
@@ -127,7 +140,7 @@ html_code = """<!DOCTYPE html>
                     <div class="form-col"><label>預設利潤加成 (%)</label><input type="number" id="setProfit"></div>
                     <div class="form-col"><label>營業稅率/發票稅 (%)</label><input type="number" id="setTax"></div>
                 </div>
-                <button class="btn-dark" onclick="saveSettings()">💾 儲存設定</button>
+                <button class="btn-dark" onclick="saveSettings()">💾 儲存並同步至雲端</button>
             </div>
         </div>
 
@@ -171,7 +184,7 @@ html_code = """<!DOCTYPE html>
             </div>
 
             <div class="card" style="margin-top: 15px;">
-                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">目前庫存狀態</h3>
+                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">目前雲端庫存狀態</h3>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -189,7 +202,7 @@ html_code = """<!DOCTYPE html>
                 <h2>新增列印任務</h2>
                 <div class="form-row">
                     <div class="form-col" style="flex: 2;">
-                        <label>選擇使用耗材</label><select id="filamentSelect"><option value="">請先至「耗材入庫」新增資料...</option></select>
+                        <label>選擇使用耗材</label><select id="filamentSelect"><option value="">載入雲端資料中...</option></select>
                     </div>
                     <div class="form-col" style="flex: 2;">
                         <label>模型名稱</label><input type="text" id="modelName" placeholder="例如：關節龍">
@@ -221,7 +234,7 @@ html_code = """<!DOCTYPE html>
                 </div>
             </div>
             <div class="card">
-                <h2>列印與銷售清單</h2>
+                <h2>列印與銷售雲端清單</h2>
                 <div id="printRecordList" style="margin-top: 15px;"></div>
             </div>
         </div>
@@ -242,7 +255,7 @@ html_code = """<!DOCTYPE html>
             </div>
             
             <div class="card">
-                <h2>購買紀錄清單</h2>
+                <h2>購買紀錄清單 (即時同步)</h2>
                 <div id="hardwareList" style="margin-top: 15px;"></div>
             </div>
             
@@ -256,7 +269,7 @@ html_code = """<!DOCTYPE html>
         <!-- 報表頁籤 -->
         <div id="reportTab" class="tab-content">
             <div class="card report-card">
-                <h2>📊 財務與營運報表總覽</h2>
+                <h2>📊 財務與營運報表總覽 (依據雲端資料)</h2>
                 <div class="form-row" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
                     <div class="form-col">
                         <label>篩選時間範圍 (影響下方統計與匯出)</label>
@@ -284,69 +297,129 @@ html_code = """<!DOCTYPE html>
     </div>
 
     <script>
+        // ================= ★ Firebase 設定碼 (已幫您填寫完成) ★ =================
+        // 如果您有複製到完整內容，也可以直接覆蓋以下這個 const firebaseConfig = { ... } 的區塊
+        const firebaseConfig = {
+            apiKey: "AIzaSyBnGHTeoiXp-jnW2OYfPjfM6tPaBWKlS7c",
+            authDomain: "d-printing-management-system.firebaseapp.com",
+            databaseURL: "https://d-printing-management-system-default-rtdb.firebaseio.com",
+            projectId: "d-printing-management-system",
+            storageBucket: "d-printing-management-system.appspot.com",
+            messagingSenderId: "請貼上您的_SENDER_ID", // 這些如果截圖沒拍到，維持預設也不影響基本運作
+            appId: "請貼上您的_APP_ID"
+        };
+        
+        // 初始化 Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
+
         // ================= ★ 多帳號獨立密碼設定區 ★ =================
         const ACCOUNTS = {
-            "robert": "1234",    // 使用者名稱: "老闆"，對應密碼: "boss123"
-            "neo": "1234",    // 使用者名稱: "小明"，對應密碼: "ming456"
-            "showrain": "1234"      // 您也可以新增更多的帳號在這裡
+            "老闆": "boss123",
+            "小明": "ming456",
+            "krshop": "1234"
         };
-        // 若要新增使用者，請依照上面格式加上："名稱": "專屬密碼" (記得加逗號)
 
         let currentUser = "";
 
+        // 登入邏輯
         function login() {
             const nameInput = document.getElementById('loginName').value.trim();
             const pwdInput = document.getElementById('loginPwd').value;
             
             if(!nameInput) { alert("請輸入您的名稱！"); return; }
-            
-            // 檢查帳號是否存在
-            if(!ACCOUNTS.hasOwnProperty(nameInput)) {
-                alert("❌ 找不到此使用者名稱，請確認輸入是否正確！");
-                return;
+            if(!ACCOUNTS.hasOwnProperty(nameInput) || ACCOUNTS[nameInput] !== pwdInput) {
+                alert("❌ 帳號或密碼錯誤！請重新確認。"); return;
             }
             
-            // 檢查該帳號的密碼是否正確
-            if(ACCOUNTS[nameInput] !== pwdInput) {
-                alert("❌ 密碼錯誤！請重新輸入。");
-                return;
-            }
-            
-            // 登入成功
             currentUser = nameInput;
             document.getElementById('currentUserDisplay').innerText = currentUser;
-            
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainSystem').style.display = 'block';
+
+            // 登入成功後，開始啟動 Firebase 雲端監聽！
+            startFirebaseSync();
         }
 
-        // ★ 加上 Enter 鍵監聽 ★
-        document.getElementById('loginName').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                document.getElementById('loginPwd').focus(); // 名稱輸入完按Enter，跳到密碼框
-            }
-        });
+        document.getElementById('loginName').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('loginPwd').focus(); });
+        document.getElementById('loginPwd').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
 
-        document.getElementById('loginPwd').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') {
-                login(); // 密碼輸入完按Enter，直接觸發登入
-            }
-        });
+        // ================= 雲端資料變數 =================
+        let filaments = [];
+        let printRecords = [];
+        let hardwareRecords = [];
+        let deletedHardwareRecords = [];
+        let sysSettings = { power: 9, fixed: 7.11, profit: 20, tax: 5 };
+
+        // ================= ★ Firebase 核心同步邏輯 ★ =================
+        function startFirebaseSync() {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.style.display = 'block'; // 顯示同步提示
+
+            db.ref('settings').on('value', (snapshot) => {
+                if(snapshot.exists()) {
+                    sysSettings = snapshot.val();
+                    loadSettingsToUI();
+                }
+            });
+
+            db.ref('filaments').on('value', (snapshot) => {
+                filaments = [];
+                snapshot.forEach(child => { filaments.push(child.val()); });
+                renderFilaments();
+            });
+
+            db.ref('printRecords').on('value', (snapshot) => {
+                printRecords = [];
+                snapshot.forEach(child => { printRecords.push(child.val()); });
+                renderPrintRecords();
+                updateReportStats();
+            });
+
+            db.ref('hardwareRecords').on('value', (snapshot) => {
+                hardwareRecords = [];
+                snapshot.forEach(child => { hardwareRecords.push(child.val()); });
+                renderHardwareRecords();
+                updateReportStats();
+            });
+
+            db.ref('deletedHardware').on('value', (snapshot) => {
+                deletedHardwareRecords = [];
+                snapshot.forEach(child => { deletedHardwareRecords.push(child.val()); });
+                renderDeletedHardware();
+            });
+
+            setTimeout(() => { syncStatus.style.display = 'none'; }, 2000);
+        }
+
+        function saveToCloud() {
+            const syncStatus = document.getElementById('syncStatus');
+            syncStatus.style.display = 'block';
+            
+            Promise.all([
+                db.ref('settings').set(sysSettings),
+                db.ref('filaments').set(filaments),
+                db.ref('printRecords').set(printRecords),
+                db.ref('hardwareRecords').set(hardwareRecords),
+                db.ref('deletedHardware').set(deletedHardwareRecords)
+            ]).then(() => {
+                setTimeout(() => { syncStatus.style.display = 'none'; }, 1000);
+            }).catch(error => {
+                alert("雲端同步失敗：" + error);
+            });
+        }
 
 
-        // 資料初始化
-        let filaments = JSON.parse(localStorage.getItem('kr_filaments')) || [];
-        let printRecords = JSON.parse(localStorage.getItem('kr_printRecords')) || [];
-        let hardwareRecords = JSON.parse(localStorage.getItem('kr_hardwareRecords')) || [];
-        let deletedHardwareRecords = JSON.parse(localStorage.getItem('kr_deletedHardwareRecords')) || [];
-        
-        let sysSettings = JSON.parse(localStorage.getItem('kr_settings')) || { power: 9, fixed: 7.11, profit: 20, tax: 5 };
+        // ================= UI 操作邏輯 =================
 
         function loadSettingsToUI() {
-            document.getElementById('setPower').value = sysSettings.power;
-            document.getElementById('setFixed').value = sysSettings.fixed;
-            document.getElementById('setProfit').value = sysSettings.profit;
-            document.getElementById('setTax').value = sysSettings.tax;
+            document.getElementById('setPower').value = sysSettings.power || 9;
+            document.getElementById('setFixed').value = sysSettings.fixed || 7.11;
+            document.getElementById('setProfit').value = sysSettings.profit || 20;
+            document.getElementById('setTax').value = sysSettings.tax || 5;
         }
 
         function saveSettings() {
@@ -354,13 +427,11 @@ html_code = """<!DOCTYPE html>
             sysSettings.fixed = parseFloat(document.getElementById('setFixed').value) || 0;
             sysSettings.profit = parseFloat(document.getElementById('setProfit').value) || 0;
             sysSettings.tax = parseFloat(document.getElementById('setTax').value) || 0;
-            localStorage.setItem('kr_settings', JSON.stringify(sysSettings));
-            loadSettingsToUI();
-            alert("✅ 設定已儲存！");
+            saveToCloud();
+            alert("✅ 雲端設定已同步儲存！");
         }
 
         document.getElementById('matDate').valueAsDate = new Date();
-        loadSettingsToUI(); 
 
         function switchTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -399,22 +470,22 @@ html_code = """<!DOCTYPE html>
                 costPerGram: price / weight, date: selectedDate 
             });
 
-            saveData(); renderFilaments();
+            saveToCloud();
             document.getElementById('matPrice').value = '';
-            alert("✅ 耗材已加入庫存！");
+            alert("✅ 耗材已加入雲端庫存！");
         }
 
         function deleteFilament(id) {
             if(confirm("確定要刪除這筆耗材庫存嗎？")) {
                 filaments = filaments.filter(f => f.id !== id);
-                saveData(); renderFilaments();
+                saveToCloud();
             }
         }
 
         function renderFilaments() {
             const tbody = document.getElementById('inventoryList');
             tbody.innerHTML = '';
-            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">無庫存</td></tr>'; 
+            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">雲端目前無庫存</td></tr>'; 
             
             filaments.forEach(f => {
                 const statusHtml = f.currentWeight <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
@@ -432,6 +503,7 @@ html_code = """<!DOCTYPE html>
         function updateSelectOptions() {
             const sel = document.getElementById('filamentSelect');
             sel.innerHTML = '<option value="">請選擇使用的耗材...</option>';
+            if(filaments.length === 0) sel.innerHTML = '<option value="">目前雲端沒有可用耗材</option>';
             filaments.filter(f => f.currentWeight > 0).forEach(f => {
                 sel.innerHTML += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`;
             });
@@ -468,7 +540,7 @@ html_code = """<!DOCTYPE html>
 
             if(!filId || !modelName || isNaN(w) || isNaN(t)) return alert("請填妥資料！");
             const f = filaments.find(x => x.id == filId); if(!f) return;
-            if(f.currentWeight < w) return alert("庫存不足！");
+            if(f.currentWeight < w) return alert("雲端庫存不足！請重新確認。");
 
             f.currentWeight -= w;
             const calc = calculateCost(w, t, f.costPerGram, applyTax);
@@ -479,20 +551,20 @@ html_code = """<!DOCTYPE html>
                 status: status, date: getFullDateString(), timestamp: new Date().getTime() 
             });
 
-            saveData(); renderPrintRecords(); renderFilaments(); 
+            saveToCloud();
             document.getElementById('modelName').value = ''; document.getElementById('weight').value = '';
             document.getElementById('time').value = ''; document.getElementById('previewBox').style.display = 'none';
-            alert("✅ 儲存成功！");
+            alert("✅ 雲端儲存成功！");
         }
 
         function toggleStatus(id) {
             const r = printRecords.find(x => x.id === id);
-            if(r) { r.status = r.status === 'unsold' ? 'sold' : 'unsold'; saveData(); renderPrintRecords(); updateReportStats(); }
+            if(r) { r.status = r.status === 'unsold' ? 'sold' : 'unsold'; saveToCloud(); }
         }
 
         function deleteRecord(id) {
-            if(confirm("確定刪除此紀錄？(耗材不自動補回)")) {
-                printRecords = printRecords.filter(x => x.id !== id); saveData(); renderPrintRecords(); updateReportStats();
+            if(confirm("確定刪除此紀錄？(耗材不會自動補回庫存喔)")) {
+                printRecords = printRecords.filter(x => x.id !== id); saveToCloud();
             }
         }
 
@@ -529,7 +601,7 @@ html_code = """<!DOCTYPE html>
                 id: Date.now(), name: name, price: price, date: getFullDateString(), timestamp: new Date().getTime()
             });
 
-            saveData(); renderHardwareRecords(); updateReportStats(); 
+            saveToCloud();
             document.getElementById('hwName').value = ''; document.getElementById('hwPrice').value = '';
         }
 
@@ -537,13 +609,13 @@ html_code = """<!DOCTYPE html>
             const record = hardwareRecords.find(r => r.id === id);
             if(!record) return;
 
-            if(confirm(`⚠️ 確定要刪除設備【${record.name}】嗎？\n(刪除後將從報表中扣除，並記錄由「${currentUser}」刪除)`)) {
+            if(confirm(`⚠️ 確定要刪除設備【${record.name}】嗎？\n(將同步更新雲端報表，並記錄由「${currentUser}」刪除)`)) {
                 hardwareRecords = hardwareRecords.filter(r => r.id !== id);
                 record.deletedBy = currentUser;
                 record.deletedAt = getFullDateString();
                 deletedHardwareRecords.push(record);
-                saveData(); renderHardwareRecords(); renderDeletedHardware(); updateReportStats(); 
-                alert(`✅ 刪除成功，已記錄至「設備刪除紀錄」。`);
+                saveToCloud();
+                alert(`✅ 雲端刪除成功。`);
             }
         }
 
@@ -612,30 +684,17 @@ html_code = """<!DOCTYPE html>
                 printRecords.forEach(r => {
                     csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`;
                 });
-                filename = `KR小舖_列印與銷售紀錄_${range}.csv`;
+                filename = `KR小舖_雲端列印與銷售紀錄_${range}.csv`;
             } else if (type === 'hardware') {
                 csvContent += "設備項目名稱,花費金額(NT$),紀錄日期\n";
                 hardwareRecords.forEach(r => csvContent += `"${r.name}",${r.price},"${r.date}"\n`);
-                filename = `KR小舖_設備支出紀錄_${range}.csv`;
+                filename = `KR小舖_雲端設備支出紀錄_${range}.csv`;
             }
 
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob));
             link.setAttribute("download", filename); document.body.appendChild(link); link.click(); document.body.removeChild(link);
         }
-
-        function saveData() {
-            localStorage.setItem('kr_filaments', JSON.stringify(filaments));
-            localStorage.setItem('kr_printRecords', JSON.stringify(printRecords));
-            localStorage.setItem('kr_hardwareRecords', JSON.stringify(hardwareRecords));
-            localStorage.setItem('kr_deletedHardwareRecords', JSON.stringify(deletedHardwareRecords)); 
-        }
-
-        renderFilaments(); renderPrintRecords(); renderHardwareRecords(); renderDeletedHardware();
     </script>
 </body>
 </html>
-"""
-
-with open('/mnt/data/KR小舖_3D列印完整管理系統_多帳號與Enter登入.html', 'w', encoding='utf-8') as f:
-    f.write(html_code)
