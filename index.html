@@ -36,6 +36,7 @@
         
         .card { background: #fff; padding: 20px; margin-top: 20px; border: 1px solid #e1e8ed; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
         .inventory-card { border-left: 5px solid #28a745; }
+        .buyback-card { border-left: 5px solid #e84393; background: #fff0f5; }
         .record-card { border-left: 5px solid #3498db; }
         .sold-card { border-left-color: #27ae60 !important; background-color: #f9fff9 !important;}
         .hardware-card { border-left: 5px solid #f39c12; }
@@ -123,7 +124,6 @@
         <div class="tab-container">
             <div class="tab-btn" onclick="switchTab('printTab', this)">🖨️ 列印與結帳</div>
             <div class="tab-btn active" onclick="switchTab('inventoryTab', this)">📦 耗材入庫</div>
-            <!-- ★ 新增的歸檔頁籤按鈕 ★ -->
             <div class="tab-btn" onclick="switchTab('archiveTab', this)">🗃️ 耗材歸檔</div>
             <div class="tab-btn" onclick="switchTab('hardwareTab', this)">🛠️ 設備支出</div>
             <div class="tab-btn" onclick="switchTab('reportTab', this)">📊 報表</div>
@@ -148,6 +148,21 @@
 
         <!-- 耗材入庫頁籤 -->
         <div id="inventoryTab" class="tab-content active">
+            
+            <div class="card buyback-card" style="margin-top: 0;">
+                <h2 style="color: #e84393; margin-bottom: 5px;">🤝 特殊色客備耗材 - 半價買回</h2>
+                <p style="font-size:12px; color:#666; margin-top:0; margin-bottom: 15px;">顧客未用完的特殊色耗材，系統將自動半價買回入庫，並記錄支出。</p>
+                <div class="form-row">
+                    <div class="form-col" style="flex:2;"><label>材質與顏色</label><input type="text" id="bbName" placeholder="例如: 雙色絲綢PLA 藍紫漸變"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>原總價 (NT$)</label><input type="number" id="bbOrigPrice" placeholder="600"></div>
+                    <div class="form-col"><label>原總重 (g)</label><input type="number" id="bbOrigWeight" placeholder="1000"></div>
+                    <div class="form-col"><label>剩餘買回 (g)</label><input type="number" id="bbRemainWeight" placeholder="400"></div>
+                </div>
+                <button class="btn-primary" style="background-color: #e84393;" onclick="processBuyback()">💰 試算並執行收購入庫</button>
+            </div>
+
             <div class="card inventory-card">
                 <h2>📦 耗材入庫</h2>
                 <div class="form-row">
@@ -198,11 +213,11 @@
             </div>
         </div>
 
-        <!-- ★ 新增的耗材歸檔頁籤 ★ -->
+        <!-- 耗材歸檔頁籤 -->
         <div id="archiveTab" class="tab-content">
             <div class="card deleted-card" style="margin-top: 0;">
                 <h2 style="color: #7f8c8d; margin-bottom: 5px;">🗃️ 耗材歸檔 (已用完耗材紀錄)</h2>
-                <p style="font-size:12px; color:#999; margin-top:0; margin-bottom: 15px;">這裡是歷史備查區。手動按「歸檔」的耗材會移至此處。</p>
+                <p style="font-size:12px; color:#999; margin-top:0; margin-bottom: 15px;">這裡是歷史備查區。手動按「歸檔」或自動扣除至0g的耗材會移至此處。</p>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -218,17 +233,32 @@
         <div id="printTab" class="tab-content">
             <div class="card record-card">
                 <h2>新增列印任務</h2>
-                <div class="form-row">
+                <div class="form-row" style="margin-bottom: 0;">
+                    <div class="form-col" style="flex: 2;"><label>模型名稱</label><input type="text" id="modelName" placeholder="例如：關節龍"></div>
+                </div>
+                
+                <label style="margin-top: 15px; color:#2980b9;">耗材使用狀況 (✨支援自動換捲扣除)</label>
+                <div class="form-row" style="background:#f4f6f8; padding:10px; border-radius:6px; margin-bottom: 10px;">
                     <div class="form-col" style="flex: 2;">
-                        <label>選擇使用耗材</label><select id="filamentSelect"><option value="">載入雲端資料中...</option></select>
+                        <label style="margin-top: 0;">選擇使用耗材</label>
+                        <select id="filamentSelect" class="fil-select"><option value="">載入雲端資料中...</option></select>
                     </div>
-                    <div class="form-col" style="flex: 2;">
-                        <label>模型名稱</label><input type="text" id="modelName" placeholder="例如：關節龍">
+                    <div class="form-col" style="flex: 1;">
+                        <label style="margin-top: 0;">消耗重量 (g)</label>
+                        <input type="number" id="weight" class="fil-weight">
                     </div>
                 </div>
+                
+                <div id="extraFilaments"></div>
+                <button class="btn-dark" style="background-color: #7f8c8d; width: auto; font-size: 12px; margin-top: 0; margin-bottom: 15px; padding: 6px 12px;" onclick="addExtraFilament()">+ 追加其他顏色/異材質</button>
+
                 <div class="form-row">
-                    <div class="form-col"><label>消耗重量 (g)</label><input type="number" id="weight"></div>
                     <div class="form-col"><label>列印時間 (小時)</label><input type="number" id="time"></div>
+                    <div class="form-col">
+                        <label>列印風險與損耗金 (%)</label>
+                        <input type="number" id="printRisk" value="5" placeholder="例如: 5">
+                        <div style="font-size: 11px; color: #e67e22; margin-top: 4px; font-weight: bold;">💡建議：單色5% | 多色15% | 異材質30%</div>
+                    </div>
                     <div class="form-col">
                         <label>商品狀態</label>
                         <select id="printStatus">
@@ -242,7 +272,7 @@
                     <label for="applyTax">📑 這是一筆 B2B 企業訂單 (自動加上營業稅與發票成本)</label>
                 </div>
                 <div id="previewBox" style="display:none; background: #e8f4f8; padding: 15px; border-radius: 6px; margin-top: 15px; border-left: 4px solid #3498db; text-align: center;">
-                    <div style="color: #555; font-size: 13px; margin-bottom: 5px;" id="previewDetail"></div>
+                    <div style="color: #555; font-size: 13px; margin-bottom: 5px; text-align: left;" id="previewDetail"></div>
                     <strong style="color: #2c3e50; font-size: 16px;">最終建議定價：</strong>
                     <span id="previewCostDisplay" style="font-size: 24px; font-weight: bold; color: #e74c3c; margin-left: 10px;">NT$ 0</span>
                 </div>
@@ -314,6 +344,9 @@
         </div>
     </div>
 
+    <!-- ★ 隱藏的下拉選單暫存區 (為了能快速複製多材質選單) -->
+    <div id="hiddenFilOptions" style="display:none;"></div>
+
     <script>
         // ================= ★ Firebase 設定碼 ★ =================
         const firebaseConfig = {
@@ -340,7 +373,6 @@
 
         let currentUser = "";
 
-        // 登入邏輯
         function login() {
             const nameInput = document.getElementById('loginName').value.trim();
             const pwdInput = document.getElementById('loginPwd').value;
@@ -361,15 +393,13 @@
         document.getElementById('loginName').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('loginPwd').focus(); });
         document.getElementById('loginPwd').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
 
-        // ================= 雲端資料變數 =================
         let filaments = [];
-        let depletedFilaments = []; // ★ 新增：歸檔耗材陣列
+        let depletedFilaments = []; 
         let printRecords = [];
         let hardwareRecords = [];
         let deletedHardwareRecords = [];
         let sysSettings = { power: 9, fixed: 7.11, profit: 20, tax: 5 };
 
-        // ================= ★ Firebase 核心同步邏輯 ★ =================
         function startFirebaseSync() {
             const syncStatus = document.getElementById('syncStatus');
             syncStatus.style.display = 'block';
@@ -387,7 +417,6 @@
                 renderFilaments();
             });
 
-            // ★ 新增：讀取歸檔庫存
             db.ref('depletedFilaments').on('value', (snapshot) => {
                 depletedFilaments = [];
                 snapshot.forEach(child => { depletedFilaments.push(child.val()); });
@@ -424,7 +453,7 @@
             Promise.all([
                 db.ref('settings').set(sysSettings),
                 db.ref('filaments').set(filaments),
-                db.ref('depletedFilaments').set(depletedFilaments), // ★ 新增：寫入歸檔庫存
+                db.ref('depletedFilaments').set(depletedFilaments),
                 db.ref('printRecords').set(printRecords),
                 db.ref('hardwareRecords').set(hardwareRecords),
                 db.ref('deletedHardware').set(deletedHardwareRecords)
@@ -434,9 +463,6 @@
                 alert("雲端同步失敗：" + error);
             });
         }
-
-
-        // ================= UI 操作邏輯 =================
 
         function loadSettingsToUI() {
             document.getElementById('setPower').value = sysSettings.power || 9;
@@ -466,6 +492,14 @@
 
         function getFullDateString() { return new Date().toLocaleString('zh-TW', {hour12: false}); }
 
+        // ★ 取得基礎名稱 (用來比對自動換捲同款耗材)
+        function getBaseName(f) { 
+            if (f.baseName) return f.baseName; 
+            const parts = f.name.split('-'); 
+            if (parts.length >= 3) return parts.slice(0, parts.length - 1).join('-'); 
+            return f.name; 
+        }
+
         function toggleCustomType() {
             const sel = document.getElementById('matType'), inp = document.getElementById('customType');
             inp.style.display = sel.value === '其他' ? 'block' : 'none'; if(sel.value==='其他') inp.focus();
@@ -473,6 +507,32 @@
         function toggleCustomColor() {
             const sel = document.getElementById('matColor'), inp = document.getElementById('customColor');
             inp.style.display = sel.value === '其他' ? 'block' : 'none'; if(sel.value==='其他') inp.focus();
+        }
+
+        function processBuyback() {
+            const name = document.getElementById('bbName').value.trim();
+            const origPrice = parseFloat(document.getElementById('bbOrigPrice').value);
+            const origWeight = parseFloat(document.getElementById('bbOrigWeight').value);
+            const remainWeight = parseFloat(document.getElementById('bbRemainWeight').value);
+
+            if(!name || isNaN(origPrice) || isNaN(origWeight) || isNaN(remainWeight)) return alert("請填寫完整買回資訊！");
+            
+            const buybackPrice = (origPrice / origWeight) * remainWeight * 0.5;
+            if(!confirm(`試算買回金額為：NT$ ${buybackPrice.toFixed(0)}\n\n系統將自動執行：\n1. 增加一筆 $${buybackPrice.toFixed(0)} 的設備支出\n2. 將 ${remainWeight}g 特殊耗材入庫\n\n確定收購嗎？`)) return;
+
+            hardwareRecords.push({ id: Date.now(), name: `客備買回: ${name}`, price: buybackPrice, date: getFullDateString(), timestamp: new Date().getTime() });
+            
+            filaments.push({
+                id: Date.now()+1, baseName: `(客備) ${name}`, name: `(客備) ${name}`,
+                initialWeight: remainWeight, currentWeight: remainWeight, totalPrice: buybackPrice,
+                costPerGram: buybackPrice / remainWeight, date: getFullDateString().substring(0,10)
+            });
+            
+            saveToCloud();
+            
+            document.getElementById('bbName').value=''; document.getElementById('bbOrigPrice').value=''; 
+            document.getElementById('bbOrigWeight').value=''; document.getElementById('bbRemainWeight').value='';
+            setTimeout(() => alert("✅ 買回完成！庫存與支出皆已同步更新。"), 10);
         }
 
         function addFilament() {
@@ -487,20 +547,23 @@
             if(isNaN(weight) || isNaN(price) || !selectedDate) return alert("請填寫完整資訊！");
 
             const dateStr = selectedDate.substring(5).replace('-', ''); 
+            
             filaments.push({
-                id: Date.now(), name: `${type}-${color}-${dateStr}`,
-                initialWeight: weight, currentWeight: weight, totalPrice: price,
-                costPerGram: price / weight, date: selectedDate 
+                id: Date.now(), 
+                baseName: `${type}-${color}`,
+                name: `${type}-${color}-${dateStr}`,
+                initialWeight: weight, 
+                currentWeight: weight, 
+                totalPrice: price,
+                costPerGram: price / weight, 
+                date: selectedDate 
             });
 
             saveToCloud();
             document.getElementById('matPrice').value = '';
-            
-            // ★ 修改：您指定的專屬提示語
             alert("✅ 耗材已成功加入！請在下方的『目前雲端庫存狀態』查看剩餘耗材。");
         }
 
-        // ★ 新增：歸檔功能
         function archiveFilament(id) {
             let f = filaments.find(x => x.id === id);
             if(f && confirm(`確定要把【${f.name}】標記為已歸檔嗎？`)) {
@@ -512,7 +575,6 @@
                 renderDepletedFilaments();
                 saveToCloud();
                 
-                // ★ 修改：您指定的專屬歸檔提示語
                 setTimeout(() => alert("✅ 歸檔成功！請至『🗃️ 耗材歸檔』查看"), 10);
             }
         }
@@ -531,13 +593,13 @@
             
             filaments.forEach(f => {
                 const statusHtml = f.currentWeight <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
+                const cpg = parseFloat(f.costPerGram) || 0;
                 tbody.innerHTML += `<tr>
                     <td><strong>${f.name}</strong><br><span style="font-size:12px; color:#888;">入庫日: ${f.date}</span></td>
-                    <td>${f.costPerGram.toFixed(3)}</td>
+                    <td>${cpg.toFixed(3)}</td>
                     <td><strong>${f.currentWeight.toFixed(0)}</strong> / ${f.initialWeight}</td>
                     <td>${statusHtml}</td>
                     <td style="min-width: 100px;">
-                        <!-- ★ 新增：歸檔按鈕 -->
                         <button class="btn-warning" style="padding: 4px 8px; font-size:12px; margin-right: 5px; margin-bottom: 5px;" onclick="archiveFilament(${f.id})">歸檔</button>
                         <button class="btn-danger" style="padding: 4px 8px; font-size:12px;" onclick="deleteFilament(${f.id})">刪除</button>
                     </td>
@@ -546,7 +608,6 @@
             updateSelectOptions(); 
         }
 
-        // ★ 新增：渲染歸檔清單功能
         function renderDepletedFilaments() {
             const tbody = document.getElementById('depletedList'); 
             if(!tbody) return;
@@ -556,70 +617,209 @@
                 return; 
             }
             [...depletedFilaments].reverse().forEach(f => {
+                const cpg = parseFloat(f.costPerGram) || 0;
                 tbody.innerHTML += `<tr>
                     <td><strong style="color: #7f8c8d; text-decoration: line-through;">${f.name}</strong></td>
-                    <td style="color: #95a5a6;">${f.costPerGram.toFixed(3)}</td>
+                    <td style="color: #95a5a6;">${cpg.toFixed(3)}</td>
                     <td style="color: #95a5a6;">${f.date || '無'}</td>
                     <td style="color: #e74c3c; font-weight: bold; font-size: 12px;">${f.depletedAt || '無紀錄'}</td>
                 </tr>`;
             });
         }
 
+        // 更新所有耗材選單
         function updateSelectOptions() {
-            const sel = document.getElementById('filamentSelect');
-            sel.innerHTML = '<option value="">請選擇使用的耗材...</option>';
-            if(filaments.length === 0) sel.innerHTML = '<option value="">目前雲端沒有可用耗材</option>';
+            let opts = '<option value="">請選擇使用的耗材...</option>';
+            if(filaments.length === 0) opts = '<option value="">目前雲端沒有可用耗材</option>';
+            
             filaments.filter(f => f.currentWeight > 0).forEach(f => {
-                sel.innerHTML += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`;
+                opts += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`;
+            });
+            
+            const hiddenOpt = document.getElementById('hiddenFilOptions');
+            if(hiddenOpt) hiddenOpt.innerHTML = opts;
+            
+            document.querySelectorAll('.fil-select').forEach(sel => {
+                const currentVal = sel.value; 
+                sel.innerHTML = opts; 
+                sel.value = currentVal;
             });
         }
 
-        function calculateCost(weightUsed, timeUsed, costPerGram, applyTax) {
-            const baseCost = (weightUsed * costPerGram) + (timeUsed * sysSettings.power) + sysSettings.fixed;
-            const preTaxPrice = baseCost * (1 + (sysSettings.profit / 100));
-            return { baseCost, preTaxPrice, finalPrice: preTaxPrice * (applyTax ? (1 + (sysSettings.tax / 100)) : 1) };
+        // 追加耗材
+        function addExtraFilament() {
+            const div = document.createElement('div');
+            div.className = 'form-row extra-fil-row';
+            div.style.background = '#fcfcfc'; div.style.padding = '10px'; div.style.borderRadius = '6px'; div.style.border = '1px dashed #ccc'; div.style.marginBottom = '10px';
+            div.innerHTML = `
+                <div class="form-col" style="flex: 2;">
+                    <label style="margin-top: 0;">追加耗材</label>
+                    <select class="fil-select">${document.getElementById('hiddenFilOptions').innerHTML}</select>
+                </div>
+                <div class="form-col" style="flex: 1;">
+                    <label style="margin-top: 0;">重量 (g)</label>
+                    <input type="number" class="fil-weight">
+                </div>
+                <div class="form-col" style="flex: 0.5; display:flex; align-items:flex-end;">
+                    <button class="btn-danger" style="margin-top:0; width:100%;" onclick="this.parentElement.parentElement.remove(); document.getElementById('previewBox').style.display='none';">移除</button>
+                </div>
+            `;
+            document.getElementById('extraFilaments').appendChild(div);
         }
 
+        // ★ 支援多材質與自動換捲的核心邏輯 ★
+        function getPrintTaskData() {
+            let totalMatCost = 0, usedFils = [], summaryNames = [], valid = true, errMsg = "";
+            let isAutoSwitched = false; // 紀錄是否觸發自動換捲
+
+            const selects = document.querySelectorAll('.fil-select');
+            const weights = document.querySelectorAll('.fil-weight');
+            let tempInventory = JSON.parse(JSON.stringify(filaments)); 
+
+            for(let i = 0; i < selects.length; i++) {
+                const fId = selects[i].value;
+                const w = parseFloat(weights[i].value);
+                
+                if(fId && !isNaN(w)) {
+                    let selectedFil = tempInventory.find(x => x.id == fId);
+                    if(selectedFil) {
+                        let baseName = getBaseName(selectedFil);
+                        let rem = w; 
+                        let deduct = Math.min(selectedFil.currentWeight, rem);
+                        
+                        // 先扣除選擇的這捲
+                        if (deduct > 0) {
+                            rem -= deduct; 
+                            selectedFil.currentWeight -= deduct;
+                            usedFils.push({ originalId: selectedFil.id, name: selectedFil.name, w: deduct, costPerGram: parseFloat(selectedFil.costPerGram)||0 });
+                            totalMatCost += (deduct * (parseFloat(selectedFil.costPerGram)||0));
+                            summaryNames.push(`${selectedFil.name}(${deduct}g)`);
+                        }
+                        
+                        // 如果還有剩餘沒扣完，啟動【自動換捲】尋找其他同款庫存
+                        if (rem > 0) {
+                            let others = tempInventory.filter(x => getBaseName(x) === baseName && x.currentWeight > 0 && x.id != selectedFil.id).sort((a,b) => a.id - b.id);
+                            for (let o of others) {
+                                if (rem <= 0) break;
+                                let d = Math.min(o.currentWeight, rem);
+                                rem -= d; 
+                                o.currentWeight -= d;
+                                usedFils.push({ originalId: o.id, name: o.name, w: d, costPerGram: parseFloat(o.costPerGram)||0 });
+                                totalMatCost += (d * (parseFloat(o.costPerGram)||0));
+                                summaryNames.push(`${o.name}(${d}g)`);
+                                isAutoSwitched = true; // 標記已觸發自動換捲
+                            }
+                        }
+                        
+                        // 如果同款的所有備份都扣光了還是不夠
+                        if (rem > 0) { 
+                            valid = false; 
+                            errMsg = `【${baseName}】系列總庫存不足！還差 ${rem}g 無法扣除。`; 
+                            break; 
+                        }
+                    }
+                } else if (fId || !isNaN(w)) {
+                    valid = false; 
+                    errMsg = "請確認每一行耗材的名稱與重量都有完整填寫！";
+                }
+            }
+            return { totalMatCost, usedFils, summaryNames, valid, errMsg, isAutoSwitched };
+        }
+
+        // 預先試算
         function previewCost(isFromCheckbox = false) {
-            const filId = document.getElementById('filamentSelect').value;
-            const w = parseFloat(document.getElementById('weight').value);
+            const data = getPrintTaskData(); 
             const t = parseFloat(document.getElementById('time').value);
             const applyTax = document.getElementById('applyTax').checked;
+            
+            const riskInput = parseFloat(document.getElementById('printRisk').value); 
+            const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
 
-            if(!filId || isNaN(w) || isNaN(t)) { if(!isFromCheckbox) alert("請填妥資料以試算！"); return; }
-            const f = filaments.find(x => x.id == filId); if(!f) return;
+            if(!data.valid || data.usedFils.length === 0 || isNaN(t)) { 
+                if(!isFromCheckbox) alert(data.errMsg || "請填妥所有耗材資料與時間以試算！"); 
+                return; 
+            }
 
-            const calc = calculateCost(w, t, f.costPerGram, applyTax);
+            const baseCost = data.totalMatCost + (t * sysSettings.power) + sysSettings.fixed;
+            const preTaxPrice = baseCost * riskMult * (1 + (sysSettings.profit / 100));
+            const taxMult = 1 + (sysSettings.tax / 100); 
+            const finalPrice = preTaxPrice * (applyTax ? taxMult : 1);
+
+            let formulaStr = `<strong>📝 公式：</strong> [ 耗材費 + 耗電費 + 固定攤提 ] × 風險加成 × 利潤加成`;
+            let calcStr = `<strong>🔢 算式：</strong> [ $${data.totalMatCost.toFixed(1)} + $${(t*sysSettings.power).toFixed(1)} + $${sysSettings.fixed} ] × ${riskMult.toFixed(2)} × ${(1+(sysSettings.profit/100)).toFixed(2)}`;
+            if (applyTax) { 
+                formulaStr += ` × 營業稅`; 
+                calcStr += ` × ${taxMult.toFixed(2)} <span style="color:#e67e22; font-weight:bold;">(含稅)</span>`; 
+            }
+
+            // ★ 新增：視覺上的自動換捲提醒燈號
+            let autoSwitchMsg = data.isAutoSwitched ? `<div style="color: #e67e22; font-weight: bold; font-size: 13px; margin-top: 10px; padding: 8px; background: #fdfaf2; border-radius: 6px; border: 1px dashed #f39c12;">🔄 系統偵測：首捲耗材不足，已自動跨捲扣除同款備用耗材！</div>` : '';
+
             document.getElementById('previewBox').style.display = 'block';
-            document.getElementById('previewDetail').innerHTML = `純成本: $${calc.baseCost.toFixed(1)} ➔ 加利潤: $${calc.preTaxPrice.toFixed(1)}` + (applyTax ? ` <br><span style="color:#e67e22; font-weight:bold;">(+ 稅金 ${sysSettings.tax}%)</span>` : '');
-            document.getElementById('previewCostDisplay').innerText = `NT$ ${Math.ceil(calc.finalPrice)}`; 
+            document.getElementById('previewDetail').innerHTML = `
+                <div style="color: #34495e; font-size: 13px; margin-bottom: 8px;">${formulaStr}</div>
+                <div style="color: #2c3e50; font-size: 14px; background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #bdc3c7;">${calcStr}</div>
+                ${autoSwitchMsg}
+            `;
+            document.getElementById('previewCostDisplay').innerText = `NT$ ${Math.ceil(finalPrice)}`; 
         }
 
+        // 確認儲存
         function addPrintRecord() {
-            const filId = document.getElementById('filamentSelect').value;
-            const modelName = document.getElementById('modelName').value;
-            const w = parseFloat(document.getElementById('weight').value);
+            const data = getPrintTaskData(); 
+            const modelName = document.getElementById('modelName').value; 
             const t = parseFloat(document.getElementById('time').value);
             const status = document.getElementById('printStatus').value; 
             const applyTax = document.getElementById('applyTax').checked;
+            
+            const riskInput = parseFloat(document.getElementById('printRisk').value); 
+            const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
 
-            if(!filId || !modelName || isNaN(w) || isNaN(t)) return alert("請填妥資料！");
-            const f = filaments.find(x => x.id == filId); if(!f) return;
-            if(f.currentWeight < w) return alert("雲端庫存不足！請重新確認。");
+            if(!modelName || !data.valid || data.usedFils.length === 0 || isNaN(t)) return alert(data.errMsg || "請填妥所有資料！");
+            
+            const finalPrice = Math.ceil((data.totalMatCost + (t * sysSettings.power) + sysSettings.fixed) * riskMult * (1 + (sysSettings.profit / 100)) * (applyTax ? (1 + (sysSettings.tax / 100)) : 1));
 
-            f.currentWeight -= w;
-            const calc = calculateCost(w, t, f.costPerGram, applyTax);
-
-            printRecords.push({
-                id: Date.now(), modelName: modelName, filamentName: f.name,
-                weightUsed: w, timeUsed: t, cost: Math.ceil(calc.finalPrice), taxApplied: applyTax, 
-                status: status, date: getFullDateString(), timestamp: new Date().getTime() 
+            // 正式扣除庫存
+            data.usedFils.forEach(u => {
+                let realF = filaments.find(x => x.id === u.originalId);
+                if (realF) {
+                    realF.currentWeight -= u.w;
+                    if (realF.currentWeight <= 0) { 
+                        realF.currentWeight = 0; 
+                        realF.depletedAt = getFullDateString(); 
+                        depletedFilaments.push(realF); 
+                    }
+                }
+            });
+            filaments = filaments.filter(x => x.currentWeight > 0);
+            
+            // 寫入列印紀錄
+            printRecords.push({ 
+                id: Date.now(), 
+                modelName: modelName, 
+                filamentName: data.summaryNames.join(' + '), 
+                weightUsed: data.usedFils.reduce((s, u) => s + u.w, 0), 
+                timeUsed: t, 
+                cost: finalPrice, 
+                taxApplied: applyTax, 
+                riskMult: riskMult, 
+                status: status, 
+                date: getFullDateString(), 
+                timestamp: new Date().getTime() 
             });
 
             saveToCloud();
-            document.getElementById('modelName').value = ''; document.getElementById('weight').value = '';
-            document.getElementById('time').value = ''; document.getElementById('previewBox').style.display = 'none';
-            alert("✅ 雲端儲存成功！");
+            
+            document.getElementById('modelName').value = ''; 
+            document.querySelectorAll('.fil-weight').forEach(el => el.value = '');
+            document.getElementById('extraFilaments').innerHTML = ''; 
+            document.getElementById('time').value = ''; 
+            document.getElementById('printRisk').value = '5'; 
+            document.getElementById('previewBox').style.display = 'none';
+            
+            let successMsg = "✅ 雲端儲存成功，耗材庫存已精準扣除！";
+            if (data.isAutoSwitched) successMsg += "\n(💡 偵測到跨捲，系統已自動為您更換備用庫存)";
+            alert(successMsg);
         }
 
         function toggleStatus(id) {
@@ -639,10 +839,17 @@
                 if (!r.status) r.status = 'unsold'; 
                 const isSold = r.status === 'sold';
                 const taxTag = r.taxApplied ? `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:5px;">含稅B2B</span>` : '';
+                
+                const riskPct = r.riskMult ? Math.round((r.riskMult - 1) * 100) : 5; 
+                let riskTag = '';
+                if (riskPct <= 5) riskTag = `<span style="color:#27ae60; font-size:13px; font-weight:normal;">🟢風險 ${riskPct}%</span>`;
+                else if (riskPct <= 15) riskTag = `<span style="color:#f39c12; font-size:13px; font-weight:normal;">🟡風險 ${riskPct}%</span>`;
+                else riskTag = `<span style="color:#e74c3c; font-size:13px; font-weight:normal;">🔴風險 ${riskPct}%</span>`;
+
                 list.innerHTML += `
                     <div class="card ${isSold ? 'sold-card' : ''}" style="border-left: 4px solid #3498db; margin-bottom: 15px; padding: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                            <span style="font-weight: bold; font-size: 16px; color: #2c3e50;">${r.modelName} ${taxTag}</span>
+                            <span style="font-weight: bold; font-size: 16px; color: #2c3e50;">${r.modelName} ${taxTag} ${riskTag}</span>
                             <div style="display: flex; gap: 5px;">
                                 <button class="${isSold ? 'btn-toggle-sold' : 'btn-toggle-unsold'}" onclick="toggleStatus(${r.id})">${isSold ? '💰 已賣出' : '📦 未賣出'}</button>
                                 <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size:13px;" onclick="deleteRecord(${r.id})">刪除</button>
@@ -650,7 +857,7 @@
                         </div>
                         <div style="font-size: 12px; color: #95a5a6; margin-bottom: 8px;">${r.date}</div>
                         <div style="font-size: 14px; color: #555; line-height: 1.6;">
-                            耗材：${r.filamentName} (${r.weightUsed}g) | 工時：${r.timeUsed}h<br>
+                            耗材：${r.filamentName} <br> 總重：${r.weightUsed}g | 工時：${r.timeUsed}h<br>
                             <strong style="color:#2c3e50; font-size: 15px;">系統定價：NT$ ${r.cost}</strong>
                         </div>
                     </div>`;
@@ -745,9 +952,10 @@
             let csvContent = "\uFEFF", filename = "";
 
             if (type === 'print') {
-                csvContent += "模型名稱,使用耗材,消耗重量(g),列印時間(h),類型,系統定價(NT$),銷售狀態,紀錄日期\n";
+                csvContent += "模型名稱,使用耗材組合,消耗重量(g),列印時間(h),類型,風險係數,系統定價(NT$),銷售狀態,紀錄日期\n";
                 printRecords.forEach(r => {
-                    csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`;
+                    const riskPct = r.riskMult ? Math.round((r.riskMult - 1) * 100) : 5;
+                    csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${riskPct},${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`;
                 });
                 filename = `KR小舖_雲端列印與銷售紀錄_${range}.csv`;
             } else if (type === 'hardware') {
