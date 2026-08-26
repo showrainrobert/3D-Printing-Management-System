@@ -123,6 +123,8 @@
         <div class="tab-container">
             <div class="tab-btn" onclick="switchTab('printTab', this)">🖨️ 列印與結帳</div>
             <div class="tab-btn active" onclick="switchTab('inventoryTab', this)">📦 耗材入庫</div>
+            <!-- ★ 新增的歸檔頁籤按鈕 ★ -->
+            <div class="tab-btn" onclick="switchTab('archiveTab', this)">🗃️ 耗材歸檔</div>
             <div class="tab-btn" onclick="switchTab('hardwareTab', this)">🛠️ 設備支出</div>
             <div class="tab-btn" onclick="switchTab('reportTab', this)">📊 報表</div>
             <div class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ 公式設定</div>
@@ -191,6 +193,22 @@
                             <tr><th>耗材名稱</th><th>單位成本 (NT$/G)</th><th>剩餘重量 (G)</th><th>狀態</th><th>操作</th></tr>
                         </thead>
                         <tbody id="inventoryList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ★ 新增的耗材歸檔頁籤 ★ -->
+        <div id="archiveTab" class="tab-content">
+            <div class="card deleted-card" style="margin-top: 0;">
+                <h2 style="color: #7f8c8d; margin-bottom: 5px;">🗃️ 耗材歸檔 (已用完耗材紀錄)</h2>
+                <p style="font-size:12px; color:#999; margin-top:0; margin-bottom: 15px;">這裡是歷史備查區。手動按「歸檔」的耗材會移至此處。</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>耗材名稱</th><th>單位成本</th><th>入庫日</th><th>用盡歸檔時間</th></tr>
+                        </thead>
+                        <tbody id="depletedList"></tbody>
                     </table>
                 </div>
             </div>
@@ -297,24 +315,21 @@
     </div>
 
     <script>
-        // ================= ★ Firebase 設定碼 (已幫您填寫完成) ★ =================
-        // 如果您有複製到完整內容，也可以直接覆蓋以下這個 const firebaseConfig = { ... } 的區塊
+        // ================= ★ Firebase 設定碼 ★ =================
         const firebaseConfig = {
             apiKey: "AIzaSyBnGHTeoiXp-jnW2OYfPjfM6tPaBWKlS7c",
             authDomain: "d-printing-management-system.firebaseapp.com",
             databaseURL: "https://d-printing-management-system-default-rtdb.firebaseio.com",
             projectId: "d-printing-management-system",
             storageBucket: "d-printing-management-system.appspot.com",
-            messagingSenderId: "請貼上您的_SENDER_ID", // 這些如果截圖沒拍到，維持預設也不影響基本運作
+            messagingSenderId: "請貼上您的_SENDER_ID",
             appId: "請貼上您的_APP_ID"
         };
         
-        // 初始化 Firebase
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
-
 
         // ================= ★ 多帳號獨立密碼設定區 ★ =================
         const ACCOUNTS = {
@@ -340,7 +355,6 @@
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainSystem').style.display = 'block';
 
-            // 登入成功後，開始啟動 Firebase 雲端監聽！
             startFirebaseSync();
         }
 
@@ -349,6 +363,7 @@
 
         // ================= 雲端資料變數 =================
         let filaments = [];
+        let depletedFilaments = []; // ★ 新增：歸檔耗材陣列
         let printRecords = [];
         let hardwareRecords = [];
         let deletedHardwareRecords = [];
@@ -357,7 +372,7 @@
         // ================= ★ Firebase 核心同步邏輯 ★ =================
         function startFirebaseSync() {
             const syncStatus = document.getElementById('syncStatus');
-            syncStatus.style.display = 'block'; // 顯示同步提示
+            syncStatus.style.display = 'block';
 
             db.ref('settings').on('value', (snapshot) => {
                 if(snapshot.exists()) {
@@ -370,6 +385,13 @@
                 filaments = [];
                 snapshot.forEach(child => { filaments.push(child.val()); });
                 renderFilaments();
+            });
+
+            // ★ 新增：讀取歸檔庫存
+            db.ref('depletedFilaments').on('value', (snapshot) => {
+                depletedFilaments = [];
+                snapshot.forEach(child => { depletedFilaments.push(child.val()); });
+                renderDepletedFilaments();
             });
 
             db.ref('printRecords').on('value', (snapshot) => {
@@ -402,6 +424,7 @@
             Promise.all([
                 db.ref('settings').set(sysSettings),
                 db.ref('filaments').set(filaments),
+                db.ref('depletedFilaments').set(depletedFilaments), // ★ 新增：寫入歸檔庫存
                 db.ref('printRecords').set(printRecords),
                 db.ref('hardwareRecords').set(hardwareRecords),
                 db.ref('deletedHardware').set(deletedHardwareRecords)
@@ -472,7 +495,26 @@
 
             saveToCloud();
             document.getElementById('matPrice').value = '';
-            alert("✅ 耗材已加入雲端庫存！");
+            
+            // ★ 修改：您指定的專屬提示語
+            alert("✅ 耗材已成功加入！請在下方的『目前雲端庫存狀態』查看剩餘耗材。");
+        }
+
+        // ★ 新增：歸檔功能
+        function archiveFilament(id) {
+            let f = filaments.find(x => x.id === id);
+            if(f && confirm(`確定要把【${f.name}】標記為已歸檔嗎？`)) {
+                f.currentWeight = 0;
+                f.depletedAt = getFullDateString();
+                depletedFilaments.push(f); 
+                filaments = filaments.filter(x => x.id !== id);
+                renderFilaments();
+                renderDepletedFilaments();
+                saveToCloud();
+                
+                // ★ 修改：您指定的專屬歸檔提示語
+                setTimeout(() => alert("✅ 歸檔成功！請至『🗃️ 耗材歸檔』查看"), 10);
+            }
         }
 
         function deleteFilament(id) {
@@ -494,10 +536,33 @@
                     <td>${f.costPerGram.toFixed(3)}</td>
                     <td><strong>${f.currentWeight.toFixed(0)}</strong> / ${f.initialWeight}</td>
                     <td>${statusHtml}</td>
-                    <td><button class="btn-danger" onclick="deleteFilament(${f.id})">刪除</button></td>
+                    <td style="min-width: 100px;">
+                        <!-- ★ 新增：歸檔按鈕 -->
+                        <button class="btn-warning" style="padding: 4px 8px; font-size:12px; margin-right: 5px; margin-bottom: 5px;" onclick="archiveFilament(${f.id})">歸檔</button>
+                        <button class="btn-danger" style="padding: 4px 8px; font-size:12px;" onclick="deleteFilament(${f.id})">刪除</button>
+                    </td>
                 </tr>`;
             });
             updateSelectOptions(); 
+        }
+
+        // ★ 新增：渲染歸檔清單功能
+        function renderDepletedFilaments() {
+            const tbody = document.getElementById('depletedList'); 
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            if(depletedFilaments.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">目前無歸檔紀錄</td></tr>'; 
+                return; 
+            }
+            [...depletedFilaments].reverse().forEach(f => {
+                tbody.innerHTML += `<tr>
+                    <td><strong style="color: #7f8c8d; text-decoration: line-through;">${f.name}</strong></td>
+                    <td style="color: #95a5a6;">${f.costPerGram.toFixed(3)}</td>
+                    <td style="color: #95a5a6;">${f.date || '無'}</td>
+                    <td style="color: #e74c3c; font-weight: bold; font-size: 12px;">${f.depletedAt || '無紀錄'}</td>
+                </tr>`;
+            });
         }
 
         function updateSelectOptions() {
