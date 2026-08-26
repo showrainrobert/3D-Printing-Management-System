@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D列印雲端管理系統</title>
+    <title>KR小舖 - 3D列印雲端管理系統</title>
     <!-- 引入 Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -36,6 +36,7 @@
         
         .card { background: #fff; padding: 20px; margin-top: 20px; border: 1px solid #e1e8ed; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
         .inventory-card { border-left: 5px solid #28a745; }
+        .buyback-card { border-left: 5px solid #e84393; background: #fff0f5; }
         .record-card { border-left: 5px solid #3498db; }
         .sold-card { border-left-color: #27ae60 !important; background-color: #f9fff9 !important;}
         .hardware-card { border-left: 5px solid #f39c12; }
@@ -60,7 +61,7 @@
         .stat-label { font-size: 13px; color: #666; font-weight: 600;}
         
         .tab-container { display: flex; margin-bottom: 25px; background: #eef2f5; border-radius: 8px; overflow: hidden; padding: 4px; flex-wrap: wrap;}
-        .tab-btn { flex: 1; min-width: 100px; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; color: #6c7a89; border-radius: 6px; transition: 0.2s; font-size: 14px;}
+        .tab-btn { flex: 1; min-width: 90px; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; color: #6c7a89; border-radius: 6px; transition: 0.2s; font-size: 14px;}
         .tab-btn.active { background: #fff; color: #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -69,28 +70,10 @@
         .checkbox-container input { width: auto; margin-right: 10px; transform: scale(1.2); }
         .checkbox-container label { margin-top: 0; cursor: pointer; color: #d35400; font-weight: bold;}
 
-        /* 登入遮罩 */
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(44, 62, 80, 0.95); z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .login-box {
-            background: white; padding: 40px 30px; border-radius: 12px;
-            width: 90%; max-width: 350px; text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        .user-badge {
-            background: #34495e; color: white; padding: 5px 15px; border-radius: 20px;
-            font-size: 13px; display: inline-block; margin-bottom: 15px;
-        }
-
-        /* 雲端同步提示 */
-        #syncStatus {
-            position: fixed; top: 10px; right: 10px; background: #f39c12; color: white;
-            padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; display: none;
-        }
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 40px 30px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .user-badge { background: #34495e; color: white; padding: 5px 15px; border-radius: 20px; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        #syncStatus { position: fixed; top: 10px; right: 10px; background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; display: none; }
     </style>
 </head>
 <body>
@@ -99,36 +82,31 @@
     <!-- ================= 登入畫面 ================= -->
     <div id="loginOverlay">
         <div class="login-box">
-            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">3d列印雲端管理系統</h2>
+            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">KR小舖 雲端系統</h2>
             <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 25px;">請輸入您的專屬名稱與密碼</p>
-            
-            <label style="text-align: left;">您的名稱</label>
-            <input type="text" id="loginName" placeholder="例如：老闆" style="margin-bottom: 15px;">
-            
-            <label style="text-align: left;">專屬密碼</label>
+            <input type="text" id="loginName" placeholder="例如：robert" style="margin-bottom: 15px;">
             <input type="password" id="loginPwd" placeholder="請輸入密碼" style="margin-bottom: 20px;">
-            
             <button class="btn-primary" onclick="login()" style="margin-top: 0;">登入系統</button>
-            <p style="font-size: 12px; color: #95a5a6; margin-top: 15px;">提示：可按 Enter 鍵快速登入</p>
         </div>
     </div>
 
     <!-- ================= 主系統 ================= -->
     <div class="container" id="mainSystem" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="margin-bottom: 10px; color: #2980b9;">☁️ 3d列印雲端管理系統</h1>
+            <h1 style="margin-bottom: 10px; color: #2980b9;">☁️ KR小舖 雲端管理系統</h1>
             <div class="user-badge">👤 目前登入：<span id="currentUserDisplay"></span></div>
         </div>
         
+        <!-- 分開的導覽列 -->
         <div class="tab-container">
             <div class="tab-btn" onclick="switchTab('printTab', this)">🖨️ 列印與結帳</div>
             <div class="tab-btn active" onclick="switchTab('inventoryTab', this)">📦 耗材入庫</div>
+            <div class="tab-btn" onclick="switchTab('archiveTab', this)">🗃️ 耗材歸檔</div>
             <div class="tab-btn" onclick="switchTab('hardwareTab', this)">🛠️ 設備支出</div>
             <div class="tab-btn" onclick="switchTab('reportTab', this)">📊 報表</div>
             <div class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ 公式設定</div>
         </div>
 
-        <!-- 參數與公式設定頁籤 -->
         <div id="settingsTab" class="tab-content">
             <div class="card settings-card">
                 <h2>⚙️ 成本與公式參數設定 (雲端同步)</h2>
@@ -144,8 +122,24 @@
             </div>
         </div>
 
-        <!-- 耗材入庫頁籤 -->
+        <!-- ================= 耗材入庫頁籤 (目前雲端庫存狀態) ================= -->
         <div id="inventoryTab" class="tab-content active">
+            
+            <div class="card buyback-card" style="margin-top: 0;">
+                <h2 style="color: #e84393; margin-bottom: 5px;">🤝 特殊色客備耗材 - 半價買回</h2>
+                <p style="font-size:12px; color:#666; margin-top:0; margin-bottom: 15px;">顧客未用完的特殊色耗材，系統將自動半價買回入庫，並記錄支出。</p>
+                <div class="form-row">
+                    <div class="form-col" style="flex:2;"><label>材質與顏色</label><input type="text" id="bbName" placeholder="例如: 雙色絲綢PLA 藍紫漸變"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>原總價 (NT$)</label><input type="number" id="bbOrigPrice" placeholder="600"></div>
+                    <div class="form-col"><label>原總重 (g)</label><input type="number" id="bbOrigWeight" placeholder="1000"></div>
+                    <div class="form-col"><label>剩餘買回 (g)</label><input type="number" id="bbRemainWeight" placeholder="400"></div>
+                </div>
+                <button class="btn-primary" style="background-color: #e84393;" onclick="processBuyback()">💰 試算並執行收購入庫</button>
+            </div>
+
+            <!-- 一般入庫區 -->
             <div class="card inventory-card">
                 <h2>📦 耗材入庫</h2>
                 <div class="form-row">
@@ -183,8 +177,9 @@
                 </div>
             </div>
 
+            <!-- 主庫存清單：專門查看剩餘耗材 -->
             <div class="card" style="margin-top: 15px;">
-                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">目前雲端庫存狀態</h3>
+                <h3 style="margin-top: 0; margin-bottom: 10px; font-size: 16px;">目前雲端庫存狀態 (剩餘耗材)</h3>
                 <div class="table-container">
                     <table>
                         <thead>
@@ -196,38 +191,57 @@
             </div>
         </div>
 
+        <!-- ================= 耗材歸檔頁籤 (用完耗材區) ================= -->
+        <div id="archiveTab" class="tab-content">
+            <div class="card deleted-card" style="margin-top: 0;">
+                <h2 style="color: #7f8c8d; margin-bottom: 5px;">🗃️ 耗材歸檔 (已用完耗材紀錄)</h2>
+                <p style="font-size:12px; color:#999; margin-top:0; margin-bottom: 15px;">這裡是歷史備查區。庫存扣至 0g 或是手動按「歸檔」的耗材會移至此處。</p>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr><th>耗材名稱</th><th>單位成本</th><th>入庫日</th><th>用盡歸檔時間</th></tr>
+                        </thead>
+                        <tbody id="depletedList"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- 任務與紀錄頁籤 -->
         <div id="printTab" class="tab-content">
             <div class="card record-card">
                 <h2>新增列印任務</h2>
-                <div class="form-row">
-                    <div class="form-col" style="flex: 2;">
-                        <label>選擇使用耗材</label><select id="filamentSelect"><option value="">載入雲端資料中...</option></select>
-                    </div>
-                    <div class="form-col" style="flex: 2;">
-                        <label>模型名稱</label><input type="text" id="modelName" placeholder="例如：關節龍">
-                    </div>
+                <div class="form-row" style="margin-bottom: 0;">
+                    <div class="form-col" style="flex: 2;"><label>模型名稱</label><input type="text" id="modelName" placeholder="例如：關節龍"></div>
                 </div>
+                <label style="margin-top: 15px; color:#2980b9;">耗材使用狀況 (支援自動換捲扣除)</label>
+                <div class="form-row" style="background:#f4f6f8; padding:10px; border-radius:6px; margin-bottom: 10px;">
+                    <div class="form-col" style="flex: 2;">
+                        <label style="margin-top: 0;">選擇使用耗材</label>
+                        <select id="filamentSelect" class="fil-select"><option value="">載入雲端資料中...</option></select>
+                    </div>
+                    <div class="form-col" style="flex: 1;"><label style="margin-top: 0;">消耗重量 (g)</label><input type="number" id="weight" class="fil-weight"></div>
+                </div>
+                <div id="extraFilaments"></div>
+                <button class="btn-dark" style="background-color: #7f8c8d; width: auto; font-size: 12px; margin-top: 0; margin-bottom: 15px; padding: 6px 12px;" onclick="addExtraFilament()">+ 追加其他顏色/異材質</button>
+
                 <div class="form-row">
-                    <div class="form-col"><label>消耗重量 (g)</label><input type="number" id="weight"></div>
                     <div class="form-col"><label>列印時間 (小時)</label><input type="number" id="time"></div>
-                    <div class="form-col">
-                        <label>商品狀態</label>
-                        <select id="printStatus">
-                            <option value="unsold">📦 未賣出 (攤位現貨)</option>
-                            <option value="sold">💰 直接確認出售 (客製單)</option>
-                        </select>
-                    </div>
+                    <div class="form-col"><label>列印風險與損耗金 (%)</label><input type="number" id="printRisk" value="5" placeholder="例如: 5"><div style="font-size: 11px; color: #e67e22; margin-top: 4px; font-weight: bold;">💡建議：單色5% | 多色15% | 異材質30%</div></div>
+                    <div class="form-col"><label>商品狀態</label><select id="printStatus"><option value="unsold">📦 未賣出 (攤位現貨)</option><option value="sold">💰 直接確認出售 (客製單)</option></select></div>
                 </div>
+                
                 <div class="checkbox-container">
                     <input type="checkbox" id="applyTax" onchange="previewCost(true)">
                     <label for="applyTax">📑 這是一筆 B2B 企業訂單 (自動加上營業稅與發票成本)</label>
                 </div>
-                <div id="previewBox" style="display:none; background: #e8f4f8; padding: 15px; border-radius: 6px; margin-top: 15px; border-left: 4px solid #3498db; text-align: center;">
-                    <div style="color: #555; font-size: 13px; margin-bottom: 5px;" id="previewDetail"></div>
-                    <strong style="color: #2c3e50; font-size: 16px;">最終建議定價：</strong>
-                    <span id="previewCostDisplay" style="font-size: 24px; font-weight: bold; color: #e74c3c; margin-left: 10px;">NT$ 0</span>
+                
+                <div id="previewBox" style="display:none; background: #fdfaf2; padding: 15px; border-radius: 8px; border: 1px solid #f39c12; margin-top: 20px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.03);">
+                    <div id="previewDetail"></div>
+                    <hr style="border:0; height:1px; background:#e67e22; margin: 15px 0; opacity: 0.3;">
+                    <strong style="color: #2c3e50; font-size: 18px;">最終建議定價：</strong><span id="previewCostDisplay" style="font-size: 28px; font-weight: bold; color: #e74c3c; margin-left: 10px;">NT$ 0</span>
                 </div>
+                
                 <div style="display: flex; gap: 15px; margin-top: 15px;">
                     <button class="btn-primary" style="flex: 1; background-color: #7f8c8d; margin-top:0;" onclick="previewCost(false)">🔍 預先試算</button>
                     <button class="btn-success" style="flex: 2; margin-top:0;" onclick="addPrintRecord()">💾 確認儲存並扣除庫存</button>
@@ -239,40 +253,31 @@
             </div>
         </div>
 
-        <!-- 設備維護支出頁籤 -->
         <div id="hardwareTab" class="tab-content">
             <div class="card hardware-card">
                 <h2>新增設備/零件支出</h2>
                 <div class="form-row">
-                    <div class="form-col" style="flex: 2;">
-                        <label>購買項目名稱</label><input type="text" id="hwName" placeholder="例如：硬化鋼噴頭">
-                    </div>
-                    <div class="form-col">
-                        <label>花費金額 (NT$)</label><input type="number" id="hwPrice">
-                    </div>
+                    <div class="form-col" style="flex: 2;"><label>購買項目名稱</label><input type="text" id="hwName" placeholder="例如：硬化鋼噴頭"></div>
+                    <div class="form-col"><label>花費金額 (NT$)</label><input type="number" id="hwPrice"></div>
                 </div>
                 <button class="btn-warning" onclick="addHardware()">💸 新增支出紀錄</button>
             </div>
-            
             <div class="card">
                 <h2>購買紀錄清單 (即時同步)</h2>
                 <div id="hardwareList" style="margin-top: 15px;"></div>
             </div>
-            
             <div class="card deleted-card" style="margin-top: 20px;">
                 <h2 style="color: #7f8c8d;">🗑️ 設備刪除紀錄 (備查)</h2>
-                <p style="font-size: 12px; color: #95a5a6; margin-top: -10px;">以下紀錄不列入報表統計，僅供核對是誰刪除的。</p>
                 <div id="deletedHardwareList" style="margin-top: 15px;"></div>
             </div>
         </div>
 
-        <!-- 報表頁籤 -->
         <div id="reportTab" class="tab-content">
             <div class="card report-card">
-                <h2>📊 財務與營運報表總覽 (依據雲端資料)</h2>
+                <h2>📊 財務與營運報表總覽</h2>
                 <div class="form-row" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
                     <div class="form-col">
-                        <label>篩選時間範圍 (影響下方統計與匯出)</label>
+                        <label>篩選時間範圍</label>
                         <select id="reportTimeRange" onchange="updateReportStats()">
                             <option value="all">全部紀錄</option><option value="this_month">本月</option><option value="this_year">本年度</option>
                         </select>
@@ -296,124 +301,80 @@
         </div>
     </div>
 
+    <div id="hiddenFilOptions" style="display:none;"></div>
+
     <script>
-        // ================= ★ Firebase 設定碼 (已幫您填寫完成) ★ =================
-        // 如果您有複製到完整內容，也可以直接覆蓋以下這個 const firebaseConfig = { ... } 的區塊
+        // 設定安全的預設日期
+        try {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            document.getElementById('matDate').value = `${yyyy}-${mm}-${dd}`;
+        } catch(e) {}
+
         const firebaseConfig = {
             apiKey: "AIzaSyBnGHTeoiXp-jnW2OYfPjfM6tPaBWKlS7c",
             authDomain: "d-printing-management-system.firebaseapp.com",
             databaseURL: "https://d-printing-management-system-default-rtdb.firebaseio.com",
             projectId: "d-printing-management-system",
             storageBucket: "d-printing-management-system.appspot.com",
-            messagingSenderId: "請貼上您的_SENDER_ID", // 這些如果截圖沒拍到，維持預設也不影響基本運作
+            messagingSenderId: "請貼上您的_SENDER_ID",
             appId: "請貼上您的_APP_ID"
         };
         
-        // 初始化 Firebase
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-
-        // ================= ★ 多帳號獨立密碼設定區 ★ =================
-        const ACCOUNTS = {
-            "robert": "1234",
-            "小明": "ming456",
-            "krshop": "1234"
-        };
-
+        const ACCOUNTS = { "robert": "1234", "老闆": "boss123", "krshop": "1234" };
         let currentUser = "";
 
-        // 登入邏輯
         function login() {
             const nameInput = document.getElementById('loginName').value.trim();
             const pwdInput = document.getElementById('loginPwd').value;
-            
-            if(!nameInput) { alert("請輸入您的名稱！"); return; }
-            if(!ACCOUNTS.hasOwnProperty(nameInput) || ACCOUNTS[nameInput] !== pwdInput) {
-                alert("❌ 帳號或密碼錯誤！請重新確認。"); return;
-            }
+            if(!nameInput) return alert("請輸入您的名稱！");
+            if(!ACCOUNTS.hasOwnProperty(nameInput) || ACCOUNTS[nameInput] !== pwdInput) return alert("❌ 帳號或密碼錯誤！請重新確認。");
             
             currentUser = nameInput;
             document.getElementById('currentUserDisplay').innerText = currentUser;
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainSystem').style.display = 'block';
-
-            // 登入成功後，開始啟動 Firebase 雲端監聽！
             startFirebaseSync();
         }
 
         document.getElementById('loginName').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('loginPwd').focus(); });
         document.getElementById('loginPwd').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
 
-        // ================= 雲端資料變數 =================
-        let filaments = [];
-        let printRecords = [];
-        let hardwareRecords = [];
-        let deletedHardwareRecords = [];
+        let filaments = [], depletedFilaments = [];
+        let printRecords = [], hardwareRecords = [], deletedHardwareRecords = [];
         let sysSettings = { power: 9, fixed: 7.11, profit: 20, tax: 5 };
 
-        // ================= ★ Firebase 核心同步邏輯 ★ =================
         function startFirebaseSync() {
             const syncStatus = document.getElementById('syncStatus');
-            syncStatus.style.display = 'block'; // 顯示同步提示
+            syncStatus.style.display = 'block'; 
 
-            db.ref('settings').on('value', (snapshot) => {
-                if(snapshot.exists()) {
-                    sysSettings = snapshot.val();
-                    loadSettingsToUI();
-                }
-            });
-
-            db.ref('filaments').on('value', (snapshot) => {
-                filaments = [];
-                snapshot.forEach(child => { filaments.push(child.val()); });
-                renderFilaments();
-            });
-
-            db.ref('printRecords').on('value', (snapshot) => {
-                printRecords = [];
-                snapshot.forEach(child => { printRecords.push(child.val()); });
-                renderPrintRecords();
-                updateReportStats();
-            });
-
-            db.ref('hardwareRecords').on('value', (snapshot) => {
-                hardwareRecords = [];
-                snapshot.forEach(child => { hardwareRecords.push(child.val()); });
-                renderHardwareRecords();
-                updateReportStats();
-            });
-
-            db.ref('deletedHardware').on('value', (snapshot) => {
-                deletedHardwareRecords = [];
-                snapshot.forEach(child => { deletedHardwareRecords.push(child.val()); });
-                renderDeletedHardware();
-            });
+            db.ref('settings').on('value', snap => { if(snap.exists()) { sysSettings = snap.val(); loadSettingsToUI(); } });
+            db.ref('filaments').on('value', snap => { filaments = []; snap.forEach(c => filaments.push(c.val())); renderFilaments(); });
+            db.ref('depletedFilaments').on('value', snap => { depletedFilaments = []; snap.forEach(c => depletedFilaments.push(c.val())); renderDepletedFilaments(); });
+            db.ref('printRecords').on('value', snap => { printRecords = []; snap.forEach(c => printRecords.push(c.val())); renderPrintRecords(); updateReportStats(); });
+            db.ref('hardwareRecords').on('value', snap => { hardwareRecords = []; snap.forEach(c => hardwareRecords.push(c.val())); renderHardwareRecords(); updateReportStats(); });
+            db.ref('deletedHardware').on('value', snap => { deletedHardwareRecords = []; snap.forEach(c => deletedHardwareRecords.push(c.val())); renderDeletedHardware(); });
 
             setTimeout(() => { syncStatus.style.display = 'none'; }, 2000);
         }
 
         function saveToCloud() {
-            const syncStatus = document.getElementById('syncStatus');
-            syncStatus.style.display = 'block';
-            
+            document.getElementById('syncStatus').style.display = 'block';
             Promise.all([
-                db.ref('settings').set(sysSettings),
+                db.ref('settings').set(filaments.length > 0 ? sysSettings : sysSettings), // Keep stable
                 db.ref('filaments').set(filaments),
+                db.ref('depletedFilaments').set(depletedFilaments),
                 db.ref('printRecords').set(printRecords),
                 db.ref('hardwareRecords').set(hardwareRecords),
                 db.ref('deletedHardware').set(deletedHardwareRecords)
-            ]).then(() => {
-                setTimeout(() => { syncStatus.style.display = 'none'; }, 1000);
-            }).catch(error => {
-                alert("雲端同步失敗：" + error);
-            });
+            ]).then(() => { setTimeout(() => { document.getElementById('syncStatus').style.display = 'none'; }, 1000); })
+              .catch(e => alert("雲端同步發生錯誤：" + e));
         }
-
-
-        // ================= UI 操作邏輯 =================
 
         function loadSettingsToUI() {
             document.getElementById('setPower').value = sysSettings.power || 9;
@@ -427,11 +388,8 @@
             sysSettings.fixed = parseFloat(document.getElementById('setFixed').value) || 0;
             sysSettings.profit = parseFloat(document.getElementById('setProfit').value) || 0;
             sysSettings.tax = parseFloat(document.getElementById('setTax').value) || 0;
-            saveToCloud();
-            alert("✅ 雲端設定已同步儲存！");
+            saveToCloud(); setTimeout(() => alert("✅ 雲端設定已同步儲存！"), 10);
         }
-
-        document.getElementById('matDate').valueAsDate = new Date();
 
         function switchTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -442,6 +400,7 @@
         }
 
         function getFullDateString() { return new Date().toLocaleString('zh-TW', {hour12: false}); }
+        function getBaseName(f) { if (f.baseName) return f.baseName; const parts = f.name.split('-'); if (parts.length >= 3) return parts.slice(0, parts.length - 1).join('-'); return f.name; }
 
         function toggleCustomType() {
             const sel = document.getElementById('matType'), inp = document.getElementById('customType');
@@ -452,132 +411,298 @@
             inp.style.display = sel.value === '其他' ? 'block' : 'none'; if(sel.value==='其他') inp.focus();
         }
 
-        function addFilament() {
-            let type = document.getElementById('matType').value;
-            let color = document.getElementById('matColor').value;
-            const price = parseFloat(document.getElementById('matPrice').value);
-            const weight = parseFloat(document.getElementById('matWeight').value);
-            const selectedDate = document.getElementById('matDate').value;
+        function processBuyback() {
+            const name = document.getElementById('bbName').value.trim();
+            const origPrice = parseFloat(document.getElementById('bbOrigPrice').value);
+            const origWeight = parseFloat(document.getElementById('bbOrigWeight').value);
+            const remainWeight = parseFloat(document.getElementById('bbRemainWeight').value);
 
-            if (type === '其他') { type = document.getElementById('customType').value.trim(); if (!type) return alert("請輸入材質！"); }
-            if (color === '其他') { color = document.getElementById('customColor').value.trim(); if (!color) return alert("請輸入顏色！"); }
-            if(isNaN(weight) || isNaN(price) || !selectedDate) return alert("請填寫完整資訊！");
+            if(!name || isNaN(origPrice) || isNaN(origWeight) || isNaN(remainWeight)) return alert("請填寫完整買回資訊！");
+            
+            const buybackPrice = (origPrice / origWeight) * remainWeight * 0.5;
+            if(!confirm(`試算買回金額為：NT$ ${buybackPrice.toFixed(0)}\n\n系統將自動執行：\n1. 增加一筆 $${buybackPrice.toFixed(0)} 的設備支出\n2. 將 ${remainWeight}g 特殊耗材入庫\n\n確定收購嗎？`)) return;
 
-            const dateStr = selectedDate.substring(5).replace('-', ''); 
+            hardwareRecords.push({ id: Date.now(), name: `客備買回: ${name}`, price: buybackPrice, date: getFullDateString(), timestamp: new Date().getTime() });
             filaments.push({
-                id: Date.now(), name: `${type}-${color}-${dateStr}`,
-                initialWeight: weight, currentWeight: weight, totalPrice: price,
-                costPerGram: price / weight, date: selectedDate 
+                id: Date.now()+1, baseName: `(客備) ${name}`, name: `(客備) ${name}`,
+                initialWeight: remainWeight, currentWeight: remainWeight, totalPrice: buybackPrice,
+                costPerGram: buybackPrice / remainWeight, date: getFullDateString().substring(0,10)
             });
+            
+            renderHardwareRecords(); renderFilaments(); updateReportStats(); saveToCloud();
+            
+            document.getElementById('bbName').value=''; document.getElementById('bbOrigPrice').value=''; 
+            document.getElementById('bbOrigWeight').value=''; document.getElementById('bbRemainWeight').value='';
+            setTimeout(() => alert("✅ 買回完成！庫存與支出皆已同步更新。"), 10);
+        }
 
-            saveToCloud();
-            document.getElementById('matPrice').value = '';
-            alert("✅ 耗材已加入雲端庫存！");
+        // 🌟 終極強化版的加入庫存功能 (具備錯誤攔截防護罩)
+        function addFilament() {
+            try {
+                let type = document.getElementById('matType').value; 
+                let color = document.getElementById('matColor').value;
+                const price = parseFloat(document.getElementById('matPrice').value); 
+                const weight = parseFloat(document.getElementById('matWeight').value);
+                const selectedDate = document.getElementById('matDate').value;
+
+                if (type === '其他') { 
+                    type = document.getElementById('customType').value.trim(); 
+                    if (!type) return alert("請輸入您自訂的材質！"); 
+                }
+                if (color === '其他') { 
+                    color = document.getElementById('customColor').value.trim(); 
+                    if (!color) return alert("請輸入您自訂的顏色！"); 
+                }
+                
+                if(isNaN(weight) || isNaN(price) || !selectedDate) {
+                    return alert("⚠️ 請填寫完整資訊 (包含總價、重量、日期)！");
+                }
+
+                // 強化保護日期格式解析，避免任何瀏覽器異常
+                let dateStr = "未知日期";
+                if (selectedDate && selectedDate.length >= 5) {
+                    dateStr = selectedDate.substring(5).replace(/-/g, '').replace(/\//g, '');
+                }
+
+                // 確保 ID 不會重複
+                const newId = Date.now() + Math.floor(Math.random() * 100);
+
+                // 把新耗材推入陣列
+                filaments.push({
+                    id: newId, 
+                    baseName: `${type}-${color}`, 
+                    name: `${type}-${color}-${dateStr}`,
+                    initialWeight: weight, 
+                    currentWeight: weight, 
+                    totalPrice: price,
+                    costPerGram: price / weight, 
+                    date: selectedDate 
+                });
+
+                // 1. 強制立刻重繪畫面
+                renderFilaments(); 
+                
+                // 2. 存入 Firebase
+                saveToCloud(); 
+                
+                // 3. 清空輸入框
+                document.getElementById('matPrice').value = '';
+                document.getElementById('customType').value = ''; 
+                document.getElementById('customType').style.display = 'none';
+                document.getElementById('customColor').value = ''; 
+                document.getElementById('customColor').style.display = 'none';
+                if (document.getElementById('matType').value === '其他') document.getElementById('matType').value = 'PLA';
+                if (document.getElementById('matColor').value === '其他') document.getElementById('matColor').value = 'Bambu基本色-黑';
+
+                // 4. 完美提示
+                setTimeout(() => alert("✅ 耗材已成功加入庫存！\n請在下方的「目前雲端庫存狀態」查看。"), 50);
+
+            } catch (error) {
+                // 如果有任何隱形 Bug，這裡會把錯誤抓出來顯示，而不會卡死當機！
+                alert("❌ 新增耗材時發生錯誤，請截圖給工程師看：\n" + error.message);
+            }
         }
 
         function deleteFilament(id) {
-            if(confirm("確定要刪除這筆耗材庫存嗎？")) {
-                filaments = filaments.filter(f => f.id !== id);
-                saveToCloud();
+            if(confirm("確定要【徹底刪除】這筆耗材庫存嗎？(不會保留紀錄)")) { 
+                filaments = filaments.filter(f => f.id !== id); 
+                renderFilaments(); saveToCloud(); 
+            }
+        }
+
+        function archiveFilament(id) {
+            let f = filaments.find(x => x.id === id);
+            if(f && confirm(`確定要把【${f.name}】標記為已用盡，並移至歸檔區嗎？`)) {
+                f.currentWeight = 0; f.depletedAt = getFullDateString();
+                depletedFilaments.push(f); 
+                filaments = filaments.filter(x => x.id !== id);
+                renderFilaments(); renderDepletedFilaments(); saveToCloud();
+                
+                setTimeout(() => alert("✅ 歸檔成功！請至『🗃️ 耗材歸檔』查看已用完的耗材。"), 10);
             }
         }
 
         function renderFilaments() {
             const tbody = document.getElementById('inventoryList');
+            if(!tbody) return;
             tbody.innerHTML = '';
-            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">雲端目前無庫存</td></tr>'; 
-            
-            filaments.forEach(f => {
-                const statusHtml = f.currentWeight <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
-                tbody.innerHTML += `<tr>
-                    <td><strong>${f.name}</strong><br><span style="font-size:12px; color:#888;">入庫日: ${f.date}</span></td>
-                    <td>${f.costPerGram.toFixed(3)}</td>
-                    <td><strong>${f.currentWeight.toFixed(0)}</strong> / ${f.initialWeight}</td>
-                    <td>${statusHtml}</td>
-                    <td><button class="btn-danger" onclick="deleteFilament(${f.id})">刪除</button></td>
-                </tr>`;
-            });
+            if(filaments.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">目前無剩餘庫存耗材</td></tr>'; 
+            } else {
+                filaments.forEach(f => {
+                    const statusHtml = f.currentWeight <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
+                    const cpg = parseFloat(f.costPerGram) || 0;
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${f.name}</strong><br><span style="font-size:12px; color:#888;">入庫日: ${f.date}</span></td>
+                        <td>${cpg.toFixed(3)}</td>
+                        <td><strong>${f.currentWeight.toFixed(0)}</strong> / ${f.initialWeight}</td>
+                        <td>${statusHtml}</td>
+                        <td style="min-width: 100px;">
+                            <button class="btn-warning" style="padding: 4px 8px; font-size:12px; margin-right: 5px; margin-bottom: 5px;" onclick="archiveFilament(${f.id})">歸檔</button>
+                            <button class="btn-danger" style="padding: 4px 8px; font-size:12px;" onclick="deleteFilament(${f.id})">刪除</button>
+                        </td>
+                    </tr>`;
+                });
+            }
             updateSelectOptions(); 
         }
 
+        function renderDepletedFilaments() {
+            const tbody = document.getElementById('depletedList'); 
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            if(depletedFilaments.length === 0) { 
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">目前無歸檔紀錄</td></tr>'; 
+            } else {
+                [...depletedFilaments].reverse().forEach(f => {
+                    const cpg = parseFloat(f.costPerGram) || 0;
+                    tbody.innerHTML += `<tr>
+                        <td><strong style="color: #7f8c8d; text-decoration: line-through;">${f.name}</strong></td>
+                        <td style="color: #95a5a6;">${cpg.toFixed(3)}</td>
+                        <td style="color: #95a5a6;">${f.date || '無'}</td>
+                        <td style="color: #e74c3c; font-weight: bold; font-size: 12px;">${f.depletedAt || '無紀錄'}</td>
+                    </tr>`;
+                });
+            }
+        }
+
         function updateSelectOptions() {
-            const sel = document.getElementById('filamentSelect');
-            sel.innerHTML = '<option value="">請選擇使用的耗材...</option>';
-            if(filaments.length === 0) sel.innerHTML = '<option value="">目前雲端沒有可用耗材</option>';
+            let opts = '<option value="">請選擇使用的耗材...</option>';
+            if(filaments.length === 0) opts = '<option value="">目前雲端沒有可用耗材</option>';
             filaments.filter(f => f.currentWeight > 0).forEach(f => {
-                sel.innerHTML += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`;
+                opts += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`;
+            });
+            const hiddenOpt = document.getElementById('hiddenFilOptions');
+            if(hiddenOpt) hiddenOpt.innerHTML = opts;
+            
+            document.querySelectorAll('.fil-select').forEach(sel => {
+                const currentVal = sel.value; sel.innerHTML = opts; sel.value = currentVal;
             });
         }
 
-        function calculateCost(weightUsed, timeUsed, costPerGram, applyTax) {
-            const baseCost = (weightUsed * costPerGram) + (timeUsed * sysSettings.power) + sysSettings.fixed;
-            const preTaxPrice = baseCost * (1 + (sysSettings.profit / 100));
-            return { baseCost, preTaxPrice, finalPrice: preTaxPrice * (applyTax ? (1 + (sysSettings.tax / 100)) : 1) };
+        function addExtraFilament() {
+            const div = document.createElement('div');
+            div.className = 'form-row extra-fil-row';
+            div.style.background = '#fcfcfc'; div.style.padding = '10px'; div.style.borderRadius = '6px'; div.style.border = '1px dashed #ccc'; div.style.marginBottom = '10px';
+            div.innerHTML = `
+                <div class="form-col" style="flex: 2;">
+                    <label style="margin-top: 0;">追加耗材</label>
+                    <select class="fil-select">${document.getElementById('hiddenFilOptions').innerHTML}</select>
+                </div>
+                <div class="form-col" style="flex: 1;">
+                    <label style="margin-top: 0;">重量 (g)</label>
+                    <input type="number" class="fil-weight">
+                </div>
+                <div class="form-col" style="flex: 0.5; display:flex; align-items:flex-end;">
+                    <button class="btn-danger" style="margin-top:0; width:100%;" onclick="this.parentElement.parentElement.remove(); document.getElementById('previewBox').style.display='none';">移除</button>
+                </div>
+            `;
+            document.getElementById('extraFilaments').appendChild(div);
+        }
+
+        function getPrintTaskData() {
+            let totalMatCost = 0, usedFils = [], summaryNames = [], valid = true, errMsg = "";
+            const selects = document.querySelectorAll('.fil-select'); const weights = document.querySelectorAll('.fil-weight');
+            let tempInventory = JSON.parse(JSON.stringify(filaments));
+
+            for(let i = 0; i < selects.length; i++) {
+                const fId = selects[i].value; const w = parseFloat(weights[i].value);
+                if(fId && !isNaN(w)) {
+                    let selectedFil = tempInventory.find(x => x.id == fId);
+                    if(selectedFil) {
+                        let baseName = getBaseName(selectedFil); let rem = w; 
+                        let deduct = Math.min(selectedFil.currentWeight, rem);
+                        if (deduct > 0) {
+                            rem -= deduct; selectedFil.currentWeight -= deduct;
+                            usedFils.push({ originalId: selectedFil.id, name: selectedFil.name, w: deduct, costPerGram: parseFloat(selectedFil.costPerGram)||0 });
+                            totalMatCost += (deduct * (parseFloat(selectedFil.costPerGram)||0)); summaryNames.push(`${selectedFil.name}(${deduct}g)`);
+                        }
+                        if (rem > 0) {
+                            let others = tempInventory.filter(x => getBaseName(x) === baseName && x.currentWeight > 0 && x.id != selectedFil.id).sort((a,b) => a.id - b.id);
+                            for (let o of others) {
+                                if (rem <= 0) break;
+                                let d = Math.min(o.currentWeight, rem); rem -= d; o.currentWeight -= d;
+                                usedFils.push({ originalId: o.id, name: o.name, w: d, costPerGram: parseFloat(o.costPerGram)||0 });
+                                totalMatCost += (d * (parseFloat(o.costPerGram)||0)); summaryNames.push(`${o.name}(${d}g)`);
+                            }
+                        }
+                        if (rem > 0) { valid = false; errMsg = `【${baseName}】系列總庫存不足！還差 ${rem}g 無法扣除。`; break; }
+                    }
+                } else if (fId || !isNaN(w)) { valid = false; errMsg = "請填寫完整的耗材與重量！"; }
+            }
+            return { totalMatCost, usedFils, summaryNames, valid, errMsg };
         }
 
         function previewCost(isFromCheckbox = false) {
-            const filId = document.getElementById('filamentSelect').value;
-            const w = parseFloat(document.getElementById('weight').value);
-            const t = parseFloat(document.getElementById('time').value);
+            const data = getPrintTaskData(); const t = parseFloat(document.getElementById('time').value);
             const applyTax = document.getElementById('applyTax').checked;
+            const riskInput = parseFloat(document.getElementById('printRisk').value); const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
 
-            if(!filId || isNaN(w) || isNaN(t)) { if(!isFromCheckbox) alert("請填妥資料以試算！"); return; }
-            const f = filaments.find(x => x.id == filId); if(!f) return;
+            if(!data.valid || data.usedFils.length === 0 || isNaN(t)) { if(!isFromCheckbox) alert(data.errMsg || "請填妥資料以試算！"); return; }
 
-            const calc = calculateCost(w, t, f.costPerGram, applyTax);
+            const baseCost = data.totalMatCost + (t * sysSettings.power) + sysSettings.fixed;
+            const preTaxPrice = baseCost * riskMult * (1 + (sysSettings.profit / 100));
+            const taxMult = 1 + (sysSettings.tax / 100); const finalPrice = preTaxPrice * (applyTax ? taxMult : 1);
+
+            let formulaStr = `<strong>📝 公式：</strong> [ 耗材費 + 耗電費 + 固定攤提 ] × 風險加成 × 利潤加成`;
+            let calcStr = `<strong>🔢 算式：</strong> [ $${data.totalMatCost.toFixed(1)} + $${(t*sysSettings.power).toFixed(1)} + $${sysSettings.fixed} ] × ${riskMult.toFixed(2)} × ${(1+(sysSettings.profit/100)).toFixed(2)}`;
+            if (applyTax) { formulaStr += ` × 營業稅`; calcStr += ` × ${taxMult.toFixed(2)} <span style="color:#e67e22; font-weight:bold;">(含稅)</span>`; }
+
             document.getElementById('previewBox').style.display = 'block';
-            document.getElementById('previewDetail').innerHTML = `純成本: $${calc.baseCost.toFixed(1)} ➔ 加利潤: $${calc.preTaxPrice.toFixed(1)}` + (applyTax ? ` <br><span style="color:#e67e22; font-weight:bold;">(+ 稅金 ${sysSettings.tax}%)</span>` : '');
-            document.getElementById('previewCostDisplay').innerText = `NT$ ${Math.ceil(calc.finalPrice)}`; 
+            document.getElementById('previewDetail').innerHTML = `<div style="color: #34495e; font-size: 13px; margin-bottom: 8px; text-align: left;">${formulaStr}</div><div style="color: #2c3e50; font-size: 14px; text-align: left; background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #bdc3c7;">${calcStr}</div>`;
+            document.getElementById('previewCostDisplay').innerText = `NT$ ${Math.ceil(finalPrice)}`; 
         }
 
         function addPrintRecord() {
-            const filId = document.getElementById('filamentSelect').value;
-            const modelName = document.getElementById('modelName').value;
-            const w = parseFloat(document.getElementById('weight').value);
-            const t = parseFloat(document.getElementById('time').value);
-            const status = document.getElementById('printStatus').value; 
-            const applyTax = document.getElementById('applyTax').checked;
+            const data = getPrintTaskData(); const modelName = document.getElementById('modelName').value; const t = parseFloat(document.getElementById('time').value);
+            const status = document.getElementById('printStatus').value; const applyTax = document.getElementById('applyTax').checked;
+            const riskInput = parseFloat(document.getElementById('printRisk').value); const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
 
-            if(!filId || !modelName || isNaN(w) || isNaN(t)) return alert("請填妥資料！");
-            const f = filaments.find(x => x.id == filId); if(!f) return;
-            if(f.currentWeight < w) return alert("雲端庫存不足！請重新確認。");
+            if(!modelName || !data.valid || data.usedFils.length === 0 || isNaN(t)) return alert(data.errMsg || "請填妥所有資料！");
+            const finalPrice = Math.ceil((data.totalMatCost + (t * sysSettings.power) + sysSettings.fixed) * riskMult * (1 + (sysSettings.profit / 100)) * (applyTax ? (1 + (sysSettings.tax / 100)) : 1));
 
-            f.currentWeight -= w;
-            const calc = calculateCost(w, t, f.costPerGram, applyTax);
-
-            printRecords.push({
-                id: Date.now(), modelName: modelName, filamentName: f.name,
-                weightUsed: w, timeUsed: t, cost: Math.ceil(calc.finalPrice), taxApplied: applyTax, 
-                status: status, date: getFullDateString(), timestamp: new Date().getTime() 
+            data.usedFils.forEach(u => {
+                let realF = filaments.find(x => x.id === u.originalId);
+                if (realF) {
+                    realF.currentWeight -= u.w;
+                    if (realF.currentWeight <= 0) { realF.currentWeight = 0; realF.depletedAt = getFullDateString(); depletedFilaments.push(realF); }
+                }
             });
+            filaments = filaments.filter(x => x.currentWeight > 0);
+            
+            printRecords.push({ id: Date.now(), modelName: modelName, filamentName: data.summaryNames.join(' + '), weightUsed: data.usedFils.reduce((s, u) => s + u.w, 0), timeUsed: t, cost: finalPrice, taxApplied: applyTax, riskMult: riskMult, status: status, date: getFullDateString(), timestamp: new Date().getTime() });
 
-            saveToCloud();
-            document.getElementById('modelName').value = ''; document.getElementById('weight').value = '';
-            document.getElementById('time').value = ''; document.getElementById('previewBox').style.display = 'none';
-            alert("✅ 雲端儲存成功！");
+            renderFilaments(); renderDepletedFilaments(); renderPrintRecords(); updateReportStats(); saveToCloud();
+            
+            document.getElementById('modelName').value = ''; document.querySelectorAll('.fil-weight').forEach(el => el.value = '');
+            document.getElementById('extraFilaments').innerHTML = ''; document.getElementById('time').value = ''; 
+            document.getElementById('printRisk').value = '5'; document.getElementById('previewBox').style.display = 'none';
+            setTimeout(() => alert("✅ 雲端儲存成功，耗材庫存已精準扣除！"), 10);
         }
 
         function toggleStatus(id) {
             const r = printRecords.find(x => x.id === id);
-            if(r) { r.status = r.status === 'unsold' ? 'sold' : 'unsold'; saveToCloud(); }
+            if(r) { r.status = r.status === 'unsold' ? 'sold' : 'unsold'; renderPrintRecords(); updateReportStats(); saveToCloud(); }
         }
 
         function deleteRecord(id) {
-            if(confirm("確定刪除此紀錄？(耗材不會自動補回庫存喔)")) {
-                printRecords = printRecords.filter(x => x.id !== id); saveToCloud();
-            }
+            if(confirm("確定刪除此紀錄？(耗材不會自動補回庫存喔)")) { printRecords = printRecords.filter(x => x.id !== id); renderPrintRecords(); updateReportStats(); saveToCloud(); }
         }
 
         function renderPrintRecords() {
             const list = document.getElementById('printRecordList'); list.innerHTML = '';
             [...printRecords].reverse().forEach(r => {
-                if (!r.status) r.status = 'unsold'; 
-                const isSold = r.status === 'sold';
+                if (!r.status) r.status = 'unsold'; const isSold = r.status === 'sold';
                 const taxTag = r.taxApplied ? `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:5px;">含稅B2B</span>` : '';
+                const riskPct = Math.round((r.riskMult - 1) * 100); let riskTag = '';
+                if (riskPct <= 5) riskTag = `<span style="color:#27ae60; font-size:13px; font-weight:normal;">🟢風險 ${riskPct}%</span>`;
+                else if (riskPct <= 15) riskTag = `<span style="color:#f39c12; font-size:13px; font-weight:normal;">🟡風險 ${riskPct}%</span>`;
+                else riskTag = `<span style="color:#e74c3c; font-size:13px; font-weight:normal;">🔴風險 ${riskPct}%</span>`;
+                
                 list.innerHTML += `
                     <div class="card ${isSold ? 'sold-card' : ''}" style="border-left: 4px solid #3498db; margin-bottom: 15px; padding: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
-                            <span style="font-weight: bold; font-size: 16px; color: #2c3e50;">${r.modelName} ${taxTag}</span>
+                            <span style="font-weight: bold; font-size: 16px; color: #2c3e50;">${r.modelName} ${taxTag} ${riskTag}</span>
                             <div style="display: flex; gap: 5px;">
                                 <button class="${isSold ? 'btn-toggle-sold' : 'btn-toggle-unsold'}" onclick="toggleStatus(${r.id})">${isSold ? '💰 已賣出' : '📦 未賣出'}</button>
                                 <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size:13px;" onclick="deleteRecord(${r.id})">刪除</button>
@@ -585,7 +710,7 @@
                         </div>
                         <div style="font-size: 12px; color: #95a5a6; margin-bottom: 8px;">${r.date}</div>
                         <div style="font-size: 14px; color: #555; line-height: 1.6;">
-                            耗材：${r.filamentName} (${r.weightUsed}g) | 工時：${r.timeUsed}h<br>
+                            耗材組合：${r.filamentName}<br>工時：${r.timeUsed}h<br>
                             <strong style="color:#2c3e50; font-size: 15px;">系統定價：NT$ ${r.cost}</strong>
                         </div>
                     </div>`;
@@ -593,29 +718,22 @@
         }
 
         function addHardware() {
-            const name = document.getElementById('hwName').value;
-            const price = parseFloat(document.getElementById('hwPrice').value);
+            const name = document.getElementById('hwName').value; const price = parseFloat(document.getElementById('hwPrice').value);
             if(!name || isNaN(price)) return alert("請填寫項目與金額！");
-
-            hardwareRecords.push({
-                id: Date.now(), name: name, price: price, date: getFullDateString(), timestamp: new Date().getTime()
-            });
-
-            saveToCloud();
+            hardwareRecords.push({ id: Date.now(), name: name, price: price, date: getFullDateString(), timestamp: new Date().getTime() });
+            renderHardwareRecords(); updateReportStats(); saveToCloud();
             document.getElementById('hwName').value = ''; document.getElementById('hwPrice').value = '';
+            setTimeout(() => alert("✅ 新增設備支出成功。"), 10);
         }
 
         function deleteHardware(id) {
-            const record = hardwareRecords.find(r => r.id === id);
-            if(!record) return;
-
-            if(confirm(`⚠️ 確定要刪除設備【${record.name}】嗎？\n(將同步更新雲端報表，並記錄由「${currentUser}」刪除)`)) {
+            const record = hardwareRecords.find(r => r.id === id); if(!record) return;
+            if(confirm(`⚠️ 確定要刪除設備【${record.name}】嗎？`)) {
                 hardwareRecords = hardwareRecords.filter(r => r.id !== id);
-                record.deletedBy = currentUser;
-                record.deletedAt = getFullDateString();
-                deletedHardwareRecords.push(record);
-                saveToCloud();
-                alert(`✅ 雲端刪除成功。`);
+                record.deletedBy = currentUser; record.deletedAt = getFullDateString();
+                deletedHardwareRecords.push(record); 
+                renderHardwareRecords(); renderDeletedHardware(); updateReportStats(); saveToCloud(); 
+                setTimeout(() => alert(`✅ 雲端刪除成功。`), 10);
             }
         }
 
@@ -624,39 +742,27 @@
             [...hardwareRecords].reverse().forEach(r => {
                 list.innerHTML += `
                     <div style="background: #fdfaf2; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #f39c12; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>${r.name}</strong> <span style="font-size:12px; color:#888;">(${r.date})</span><br>
-                            <strong style="color:#c0392b;">NT$ ${r.price.toFixed(0)}</strong>
-                        </div>
+                        <div><strong>${r.name}</strong> <span style="font-size:12px; color:#888;">(${r.date})</span><br><strong style="color:#c0392b;">NT$ ${r.price.toFixed(0)}</strong></div>
                         <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size:13px;" onclick="deleteHardware(${r.id})">刪除</button>
                     </div>`;
             });
         }
 
         function renderDeletedHardware() {
-            const list = document.getElementById('deletedHardwareList'); 
-            list.innerHTML = '';
-            if(deletedHardwareRecords.length === 0) {
-                list.innerHTML = '<div style="color:#999; font-size: 13px;">目前沒有刪除紀錄。</div>'; return;
-            }
+            const list = document.getElementById('deletedHardwareList'); list.innerHTML = '';
+            if(deletedHardwareRecords.length === 0) { list.innerHTML = '<div style="color:#999; font-size: 13px;">目前沒有刪除紀錄。</div>'; return; }
             [...deletedHardwareRecords].reverse().forEach(r => {
                 list.innerHTML += `
                     <div style="background: #fff; padding: 10px; border: 1px dashed #ccc; margin-bottom: 8px; border-radius: 4px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-                            <span style="text-decoration: line-through; color: #7f8c8d;">${r.name} (NT$ ${r.price})</span>
-                            <span style="font-size:12px; color:#e74c3c; font-weight:bold;">刪除者：${r.deletedBy}</span>
-                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="text-decoration: line-through; color: #7f8c8d;">${r.name} (NT$ ${r.price})</span><span style="font-size:12px; color:#e74c3c; font-weight:bold;">刪除者：${r.deletedBy}</span></div>
                         <div style="font-size:11px; color:#bdc3c7;">原本購買日: ${r.date} | 刪除時間: ${r.deletedAt}</div>
                     </div>`;
             });
         }
 
         function updateReportStats() {
-            const range = document.getElementById('reportTimeRange').value;
-            const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
-
+            const range = document.getElementById('reportTimeRange').value; const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
             let fPrints = printRecords, fHW = hardwareRecords;
-
             if (range === 'this_month') {
                 fPrints = printRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear && new Date(r.timestamp||r.id).getMonth()===currentMonth);
                 fHW = hardwareRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear && new Date(r.timestamp||r.id).getMonth()===currentMonth);
@@ -664,33 +770,23 @@
                 fPrints = printRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear);
                 fHW = hardwareRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear);
             }
-
             let uCost = 0, sRev = 0, hCost = 0;
-            fPrints.forEach(r => r.status === 'sold' ? sRev+=r.cost : uCost+=r.cost);
-            fHW.forEach(r => hCost+=r.price);
-
-            document.getElementById('reportSoldRevenue').innerText = sRev.toFixed(0);
-            document.getElementById('reportUnsoldCost').innerText = uCost.toFixed(0);
-            document.getElementById('reportHardwareCost').innerText = hCost.toFixed(0);
-            document.getElementById('reportNetProfit').innerText = (sRev - hCost).toFixed(0);
+            fPrints.forEach(r => r.status === 'sold' ? sRev+=r.cost : uCost+=r.cost); fHW.forEach(r => hCost+=r.price);
+            document.getElementById('reportSoldRevenue').innerText = sRev.toFixed(0); document.getElementById('reportUnsoldCost').innerText = uCost.toFixed(0);
+            document.getElementById('reportHardwareCost').innerText = hCost.toFixed(0); document.getElementById('reportNetProfit').innerText = (sRev - hCost).toFixed(0);
         }
 
         function exportCSV(type) {
             const range = document.getElementById('reportTimeRange').options[document.getElementById('reportTimeRange').selectedIndex].text;
             let csvContent = "\uFEFF", filename = "";
-
             if (type === 'print') {
-                csvContent += "模型名稱,使用耗材,消耗重量(g),列印時間(h),類型,系統定價(NT$),銷售狀態,紀錄日期\n";
-                printRecords.forEach(r => {
-                    csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`;
-                });
+                csvContent += "模型名稱,使用耗材組合,消耗總重量(g),列印時間(h),類型,風險係數,系統定價(NT$),銷售狀態,紀錄日期\n";
+                printRecords.forEach(r => { csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${r.riskMult},${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`; });
                 filename = `KR小舖_雲端列印與銷售紀錄_${range}.csv`;
             } else if (type === 'hardware') {
-                csvContent += "設備項目名稱,花費金額(NT$),紀錄日期\n";
-                hardwareRecords.forEach(r => csvContent += `"${r.name}",${r.price},"${r.date}"\n`);
+                csvContent += "設備項目名稱,花費金額(NT$),紀錄日期\n"; hardwareRecords.forEach(r => csvContent += `"${r.name}",${r.price},"${r.date}"\n`);
                 filename = `KR小舖_雲端設備支出紀錄_${range}.csv`;
             }
-
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob));
             link.setAttribute("download", filename); document.body.appendChild(link); link.click(); document.body.removeChild(link);
