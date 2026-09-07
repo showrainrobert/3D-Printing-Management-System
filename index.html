@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KR小舖 3D列印雲端管理系統</title>
+    <title>3D列印雲端管理系統</title>
     <!-- 引入 Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -83,7 +83,7 @@
     <!-- ================= 登入畫面 ================= -->
     <div id="loginOverlay">
         <div class="login-box">
-            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">KR小舖 雲端系統</h2>
+            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">3D列印雲端系統</h2>
             <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 25px;">請輸入您的專屬名稱與密碼</p>
             <input type="text" id="loginName" placeholder="例如：robert 或老闆" style="margin-bottom: 15px;">
             <input type="password" id="loginPwd" placeholder="請輸入密碼" style="margin-bottom: 20px;">
@@ -95,7 +95,7 @@
     <!-- ================= 主系統 ================= -->
     <div class="container" id="mainSystem" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="margin-bottom: 10px; color: #2980b9;">☁️ KR小舖 雲端管理系統</h1>
+            <h1 style="margin-bottom: 10px; color: #2980b9;">☁️ 3D列印雲端系統</h1>
             <div class="user-badge">👤 目前登入：<span id="currentUserDisplay"></span></div>
         </div>
         
@@ -829,10 +829,10 @@
             if (type === 'print') {
                 csvContent += "模型名稱,使用耗材組合,消耗總重量(g),列印時間(h),類型,風險係數,系統定價(NT$),銷售狀態,紀錄日期\n";
                 printRecords.forEach(r => { const riskPct = r.riskMult ? Math.round((r.riskMult - 1) * 100) : 5; csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${riskPct},${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`; });
-                filename = `KR小舖_雲端列印與銷售紀錄_${range}.csv`;
+                filename = `3D列印雲端系統銷售紀錄_${range}.csv`;
             } else if (type === 'hardware') {
                 csvContent += "設備項目名稱,花費金額(NT$),紀錄日期\n"; hardwareRecords.forEach(r => csvContent += `"${r.name}",${r.price},"${r.date}"\n`);
-                filename = `KR小舖_雲端設備支出紀錄_${range}.csv`;
+                filename = `3D列印雲端系統支出紀錄_${range}.csv`;
             }
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob));
