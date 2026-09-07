@@ -169,7 +169,9 @@
                     </div>
                 </div>
                 <div class="form-row">
-                    <div class="form-col"><label>購入總價 (NT$)</label><input type="number" id="matPrice" placeholder="450"></div>
+                    <!-- ★ 新增運費/加錢欄位 ★ -->
+                    <div class="form-col"><label>購入價 (NT$)</label><input type="number" id="matPrice" placeholder="例如 450"></div>
+                    <div class="form-col"><label>運費/加錢 (NT$)</label><input type="number" id="matShipping" placeholder="例如 60 (選填)"></div>
                     <div class="form-col"><label>初始重量 (g)</label><input type="number" id="matWeight" value="1000"></div>
                 </div>
                 <div style="text-align: right; margin-top: 5px;">
@@ -182,7 +184,8 @@
                 <div class="table-container">
                     <table>
                         <thead>
-                            <tr><th>耗材名稱</th><th>單位成本 (NT$/G)</th><th>剩餘重量 (G)</th><th>狀態</th><th>操作</th></tr>
+                            <!-- ★ 新增總成本顯示 ★ -->
+                            <tr><th>耗材名稱</th><th>總成本(含運)</th><th>單位成本 (/g)</th><th>剩餘重量 (G)</th><th>狀態</th><th>操作</th></tr>
                         </thead>
                         <tbody id="inventoryList"></tbody>
                     </table>
@@ -198,7 +201,7 @@
                 <div class="table-container">
                     <table>
                         <thead>
-                            <tr><th>耗材名稱</th><th>單位成本</th><th>入庫日</th><th>用盡歸檔時間</th></tr>
+                            <tr><th>耗材名稱</th><th>總成本(含運)</th><th>單位成本</th><th>入庫日</th><th>歸檔時間</th></tr>
                         </thead>
                         <tbody id="depletedList"></tbody>
                     </table>
@@ -368,7 +371,6 @@
 
             db.ref('settings').on('value', snap => { if(snap.exists()) { sysSettings = snap.val(); loadSettingsToUI(); } });
             
-            // ★ 超強防呆機制：強制轉換所有 Firebase 抓下來的資料為正確格式 ★
             db.ref('filaments').on('value', snap => { 
                 filaments = []; 
                 snap.forEach(c => { 
@@ -489,26 +491,37 @@
             let type = document.getElementById('matType').value; 
             let color = document.getElementById('matColor').value;
             const price = parseFloat(document.getElementById('matPrice').value); 
+            // ★ 抓取運費，若沒填就預設 0 ★
+            const shipping = parseFloat(document.getElementById('matShipping').value) || 0; 
             const weight = parseFloat(document.getElementById('matWeight').value);
             const selectedDate = document.getElementById('matDate').value;
 
             if (type === '其他') { type = document.getElementById('customType').value.trim(); if (!type) return alert("請輸入您自訂的材質！"); }
             if (color === '其他') { color = document.getElementById('customColor').value.trim(); if (!color) return alert("請輸入您自訂的顏色！"); }
-            if(isNaN(weight) || isNaN(price) || !selectedDate) return alert("⚠️ 請填寫完整資訊！");
+            if(isNaN(weight) || isNaN(price) || !selectedDate) return alert("⚠️ 請填寫完整資訊！(運費可留空)");
 
             let dateStr = "未知";
             if (selectedDate && selectedDate.length >= 5) dateStr = selectedDate.substring(5).replace(/-/g, '').replace(/\//g, '');
+
+            // ★ 計算含運總價 ★
+            const finalTotalCost = price + shipping;
 
             filaments.push({
                 id: Date.now(), 
                 baseName: `${type}-${color}`, 
                 name: `${type}-${color}-${dateStr}`,
-                initialWeight: weight, currentWeight: weight, totalPrice: price,
-                costPerGram: price / weight, date: selectedDate 
+                initialWeight: weight, 
+                currentWeight: weight, 
+                totalPrice: finalTotalCost, 
+                originalPrice: price, 
+                shippingFee: shipping,
+                costPerGram: finalTotalCost / weight, 
+                date: selectedDate 
             });
 
             saveToCloud(); 
             document.getElementById('matPrice').value = '';
+            document.getElementById('matShipping').value = '';
             setTimeout(() => alert("✅ 耗材已成功加入！請在下方的『目前雲端庫存狀態』查看剩餘耗材。"), 10);
         }
 
@@ -530,18 +543,19 @@
             const tbody = document.getElementById('inventoryList');
             if(!tbody) return;
             tbody.innerHTML = '';
-            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">目前無剩餘庫存耗材</td></tr>'; 
+            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#999;">目前無剩餘庫存耗材</td></tr>'; 
             else {
                 filaments.forEach(f => {
-                    // ★ 防止死機：確保數字格式正確 ★
                     const cw = parseFloat(f.currentWeight) || 0;
                     const iw = parseFloat(f.initialWeight) || 0;
                     const cpg = parseFloat(f.costPerGram) || 0;
+                    const totalCost = parseFloat(f.totalPrice || f.originalPrice || 0); // 支援舊資料
                     
                     const statusHtml = cw <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
                     
                     tbody.innerHTML += `<tr>
                         <td><strong>${f.name}</strong><br><span style="font-size:12px; color:#888;">入庫日: ${f.date}</span></td>
+                        <td style="color:#8e44ad; font-weight:bold;">NT$ ${totalCost.toFixed(0)}</td>
                         <td>${cpg.toFixed(3)}</td>
                         <td><strong>${cw.toFixed(0)}</strong> / ${iw.toFixed(0)}</td>
                         <td>${statusHtml}</td>
@@ -559,12 +573,15 @@
             const tbody = document.getElementById('depletedList'); 
             if(!tbody) return;
             tbody.innerHTML = '';
-            if(depletedFilaments.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">目前無歸檔紀錄</td></tr>'; 
+            if(depletedFilaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">目前無歸檔紀錄</td></tr>'; 
             else {
                 [...depletedFilaments].reverse().forEach(f => {
                     const cpg = parseFloat(f.costPerGram) || 0;
+                    const totalCost = parseFloat(f.totalPrice || f.originalPrice || 0);
+                    
                     tbody.innerHTML += `<tr>
                         <td><strong style="color: #7f8c8d; text-decoration: line-through;">${f.name}</strong></td>
+                        <td style="color: #95a5a6;">NT$ ${totalCost.toFixed(0)}</td>
                         <td style="color: #95a5a6;">${cpg.toFixed(3)}</td>
                         <td style="color: #95a5a6;">${f.date || '無'}</td>
                         <td style="color: #e74c3c; font-weight: bold; font-size: 12px;">${f.depletedAt || '無紀錄'}</td>
@@ -576,13 +593,10 @@
         function updateSelectOptions() {
             let opts = '<option value="">請選擇使用的耗材...</option>';
             if(filaments.length === 0) opts = '<option value="">目前雲端沒有可用耗材</option>';
-            
-            // ★ 防止死機：確保 dropdown 的重量比較也是安全的 ★
             filaments.filter(f => (parseFloat(f.currentWeight)||0) > 0).forEach(f => { 
                 const cw = parseFloat(f.currentWeight) || 0;
                 opts += `<option value="${f.id}">${f.name} (餘 ${cw.toFixed(0)}g)</option>`; 
             });
-            
             const hiddenOpt = document.getElementById('hiddenFilOptions');
             if(hiddenOpt) hiddenOpt.innerHTML = opts;
             document.querySelectorAll('.fil-select').forEach(sel => { const currentVal = sel.value; sel.innerHTML = opts; sel.value = currentVal; });
@@ -800,7 +814,7 @@
             let uCost = 0, sRev = 0, hCost = 0, filCost = 0;
             fPrints.forEach(r => r.status === 'sold' ? sRev+=r.cost : uCost+=r.cost); 
             fHW.forEach(r => hCost+=r.price);
-            fFils.forEach(r => filCost += (parseFloat(r.totalPrice) || 0)); 
+            fFils.forEach(r => filCost += (parseFloat(r.totalPrice) || parseFloat(r.originalPrice) || 0)); 
 
             document.getElementById('reportSoldRevenue').innerText = sRev.toFixed(0); 
             document.getElementById('reportUnsoldCost').innerText = uCost.toFixed(0);
