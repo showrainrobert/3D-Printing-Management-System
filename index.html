@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D列印雲端管理系統</title>
+    <title>KR小舖 3D列印雲端管理系統</title>
     <!-- 引入 Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -56,12 +56,13 @@
         .stat-box { background: #e8f4f8; padding: 20px 15px; border-radius: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02);}
         .stat-box.revenue { background: #e9f7ef; }
         .stat-box.expense { background: #fdedec; }
+        .stat-box.filament { background: #f9f0ff; border-left: 4px solid #8e44ad; }
         .stat-box.profit { background: #f4f6f8; border: 1px solid #dce1e6;}
         .stat-value { font-size: 24px; font-weight: bold; margin-top: 8px;}
         .stat-label { font-size: 13px; color: #666; font-weight: 600;}
         
         .tab-container { display: flex; margin-bottom: 25px; background: #eef2f5; border-radius: 8px; overflow: hidden; padding: 4px; flex-wrap: wrap;}
-        .tab-btn { flex: 1; min-width: 100px; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; color: #6c7a89; border-radius: 6px; transition: 0.2s; font-size: 14px;}
+        .tab-btn { flex: 1; min-width: 90px; padding: 10px; text-align: center; cursor: pointer; font-weight: bold; color: #6c7a89; border-radius: 6px; transition: 0.2s; font-size: 14px;}
         .tab-btn.active { background: #fff; color: #3498db; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -70,28 +71,10 @@
         .checkbox-container input { width: auto; margin-right: 10px; transform: scale(1.2); }
         .checkbox-container label { margin-top: 0; cursor: pointer; color: #d35400; font-weight: bold;}
 
-        /* 登入遮罩 */
-        #loginOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(44, 62, 80, 0.95); z-index: 9999;
-            display: flex; align-items: center; justify-content: center;
-        }
-        .login-box {
-            background: white; padding: 40px 30px; border-radius: 12px;
-            width: 90%; max-width: 350px; text-align: center;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        }
-        .user-badge {
-            background: #34495e; color: white; padding: 5px 15px; border-radius: 20px;
-            font-size: 13px; display: inline-block; margin-bottom: 15px;
-        }
-
-        /* 雲端同步提示 */
-        #syncStatus {
-            position: fixed; top: 10px; right: 10px; background: #f39c12; color: white;
-            padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; display: none;
-        }
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(44, 62, 80, 0.95); z-index: 9999; display: flex; align-items: center; justify-content: center; }
+        .login-box { background: white; padding: 40px 30px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        .user-badge { background: #34495e; color: white; padding: 5px 15px; border-radius: 20px; font-size: 13px; display: inline-block; margin-bottom: 15px; }
+        #syncStatus { position: fixed; top: 10px; right: 10px; background: #f39c12; color: white; padding: 5px 15px; border-radius: 20px; font-size: 12px; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; display: none; }
     </style>
 </head>
 <body>
@@ -100,15 +83,10 @@
     <!-- ================= 登入畫面 ================= -->
     <div id="loginOverlay">
         <div class="login-box">
-            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">3d列印雲端管理系統</h2>
+            <h2 style="color: #2c3e50; font-size: 24px; margin-bottom: 10px;">KR小舖 雲端系統</h2>
             <p style="color: #7f8c8d; font-size: 13px; margin-bottom: 25px;">請輸入您的專屬名稱與密碼</p>
-            
-            <label style="text-align: left;">您的名稱</label>
-            <input type="text" id="loginName" placeholder="例如：老闆" style="margin-bottom: 15px;">
-            
-            <label style="text-align: left;">專屬密碼</label>
+            <input type="text" id="loginName" placeholder="例如：robert 或老闆" style="margin-bottom: 15px;">
             <input type="password" id="loginPwd" placeholder="請輸入密碼" style="margin-bottom: 20px;">
-            
             <button class="btn-primary" onclick="login()" style="margin-top: 0;">登入系統</button>
             <p style="font-size: 12px; color: #95a5a6; margin-top: 15px;">提示：可按 Enter 鍵快速登入</p>
         </div>
@@ -117,7 +95,7 @@
     <!-- ================= 主系統 ================= -->
     <div class="container" id="mainSystem" style="display: none;">
         <div style="display: flex; justify-content: space-between; align-items: center;">
-            <h1 style="margin-bottom: 10px; color: #2980b9;">☁️ 3d列印雲端管理系統</h1>
+            <h1 style="margin-bottom: 10px; color: #2980b9;">☁️ KR小舖 雲端管理系統</h1>
             <div class="user-badge">👤 目前登入：<span id="currentUserDisplay"></span></div>
         </div>
         
@@ -130,7 +108,6 @@
             <div class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ 公式設定</div>
         </div>
 
-        <!-- 參數與公式設定頁籤 -->
         <div id="settingsTab" class="tab-content">
             <div class="card settings-card">
                 <h2>⚙️ 成本與公式參數設定 (雲端同步)</h2>
@@ -146,7 +123,7 @@
             </div>
         </div>
 
-        <!-- 耗材入庫頁籤 -->
+        <!-- ================= 耗材入庫頁籤 ================= -->
         <div id="inventoryTab" class="tab-content active">
             
             <div class="card buyback-card" style="margin-top: 0;">
@@ -213,7 +190,7 @@
             </div>
         </div>
 
-        <!-- 耗材歸檔頁籤 -->
+        <!-- ================= 耗材歸檔頁籤 ================= -->
         <div id="archiveTab" class="tab-content">
             <div class="card deleted-card" style="margin-top: 0;">
                 <h2 style="color: #7f8c8d; margin-bottom: 5px;">🗃️ 耗材歸檔 (已用完耗材紀錄)</h2>
@@ -229,7 +206,7 @@
             </div>
         </div>
 
-        <!-- 任務與紀錄頁籤 -->
+        <!-- ================= 列印任務頁籤 ================= -->
         <div id="printTab" class="tab-content">
             <div class="card record-card">
                 <h2>新增列印任務</h2>
@@ -287,40 +264,33 @@
             </div>
         </div>
 
-        <!-- 設備維護支出頁籤 -->
+        <!-- ================= 設備維護支出頁籤 ================= -->
         <div id="hardwareTab" class="tab-content">
             <div class="card hardware-card">
                 <h2>新增設備/零件支出</h2>
                 <div class="form-row">
-                    <div class="form-col" style="flex: 2;">
-                        <label>購買項目名稱</label><input type="text" id="hwName" placeholder="例如：硬化鋼噴頭">
-                    </div>
-                    <div class="form-col">
-                        <label>花費金額 (NT$)</label><input type="number" id="hwPrice">
-                    </div>
+                    <div class="form-col" style="flex: 2;"><label>購買項目名稱</label><input type="text" id="hwName" placeholder="例如：硬化鋼噴頭"></div>
+                    <div class="form-col"><label>花費金額 (NT$)</label><input type="number" id="hwPrice"></div>
                 </div>
                 <button class="btn-warning" onclick="addHardware()">💸 新增支出紀錄</button>
             </div>
-            
             <div class="card">
                 <h2>購買紀錄清單 (即時同步)</h2>
                 <div id="hardwareList" style="margin-top: 15px;"></div>
             </div>
-            
             <div class="card deleted-card" style="margin-top: 20px;">
                 <h2 style="color: #7f8c8d;">🗑️ 設備刪除紀錄 (備查)</h2>
-                <p style="font-size: 12px; color: #95a5a6; margin-top: -10px;">以下紀錄不列入報表統計，僅供核對是誰刪除的。</p>
                 <div id="deletedHardwareList" style="margin-top: 15px;"></div>
             </div>
         </div>
 
-        <!-- 報表頁籤 -->
+        <!-- ================= 報表頁籤 ================= -->
         <div id="reportTab" class="tab-content">
             <div class="card report-card">
                 <h2>📊 財務與營運報表總覽 (依據雲端資料)</h2>
                 <div class="form-row" style="margin-top: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px;">
                     <div class="form-col">
-                        <label>篩選時間範圍 (影響下方統計與匯出)</label>
+                        <label>篩選時間範圍</label>
                         <select id="reportTimeRange" onchange="updateReportStats()">
                             <option value="all">全部紀錄</option><option value="this_month">本月</option><option value="this_year">本年度</option>
                         </select>
@@ -330,7 +300,9 @@
                     <div class="stat-box revenue"><div class="stat-label">💰 已實現總營收</div><div class="stat-value" id="reportSoldRevenue" style="color: #27ae60;">0</div></div>
                     <div class="stat-box"><div class="stat-label">📦 待售現貨總價估值</div><div class="stat-value" id="reportUnsoldCost" style="color: #f39c12;">0</div></div>
                 </div>
-                <div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+                <!-- ★ 新增：耗材採購總額 區塊 -->
+                <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="stat-box filament"><div class="stat-label">🧶 耗材採購總額 (資產/現金流出)</div><div class="stat-value" id="reportFilamentCost" style="color: #8e44ad;">0</div></div>
                     <div class="stat-box expense"><div class="stat-label">🛠️ 設備與維護總支出</div><div class="stat-value" id="reportHardwareCost" style="color: #c0392b;">0</div></div>
                     <div class="stat-box profit"><div class="stat-label">📈 淨利潤預估</div><div class="stat-value" id="reportNetProfit" style="color: #2c3e50;">0</div></div>
                 </div>
@@ -344,11 +316,19 @@
         </div>
     </div>
 
-    <!-- ★ 隱藏的下拉選單暫存區 (為了能快速複製多材質選單) -->
+    <!-- 隱藏的下拉選單暫存區 -->
     <div id="hiddenFilOptions" style="display:none;"></div>
 
     <script>
-        // ================= ★ Firebase 設定碼 ★ =================
+        // 設定安全的預設日期
+        try {
+            const today = new Date();
+            const yyyy = today.getFullYear();
+            const mm = String(today.getMonth() + 1).padStart(2, '0');
+            const dd = String(today.getDate()).padStart(2, '0');
+            document.getElementById('matDate').value = `${yyyy}-${mm}-${dd}`;
+        } catch(e) {}
+
         const firebaseConfig = {
             apiKey: "AIzaSyBnGHTeoiXp-jnW2OYfPjfM6tPaBWKlS7c",
             authDomain: "d-printing-management-system.firebaseapp.com",
@@ -359,97 +339,48 @@
             appId: "請貼上您的_APP_ID"
         };
         
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ================= ★ 多帳號獨立密碼設定區 ★ =================
-        const ACCOUNTS = {
-            "robert": "1234",
-            "小明": "ming456",
-            "krshop": "1234"
-        };
-
+        const ACCOUNTS = { "robert": "1234", "老闆": "boss123", "krshop": "1234", "小明": "ming456" };
         let currentUser = "";
 
         function login() {
             const nameInput = document.getElementById('loginName').value.trim();
             const pwdInput = document.getElementById('loginPwd').value;
-            
-            if(!nameInput) { alert("請輸入您的名稱！"); return; }
-            if(!ACCOUNTS.hasOwnProperty(nameInput) || ACCOUNTS[nameInput] !== pwdInput) {
-                alert("❌ 帳號或密碼錯誤！請重新確認。"); return;
-            }
+            if(!nameInput) return alert("請輸入您的名稱！");
+            if(!ACCOUNTS.hasOwnProperty(nameInput) || ACCOUNTS[nameInput] !== pwdInput) return alert("❌ 帳號或密碼錯誤！請重新確認。");
             
             currentUser = nameInput;
             document.getElementById('currentUserDisplay').innerText = currentUser;
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainSystem').style.display = 'block';
-
             startFirebaseSync();
         }
 
         document.getElementById('loginName').addEventListener('keypress', e => { if (e.key === 'Enter') document.getElementById('loginPwd').focus(); });
         document.getElementById('loginPwd').addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
 
-        let filaments = [];
-        let depletedFilaments = []; 
-        let printRecords = [];
-        let hardwareRecords = [];
-        let deletedHardwareRecords = [];
+        let filaments = [], depletedFilaments = [];
+        let printRecords = [], hardwareRecords = [], deletedHardwareRecords = [];
         let sysSettings = { power: 9, fixed: 7.11, profit: 20, tax: 5 };
 
         function startFirebaseSync() {
             const syncStatus = document.getElementById('syncStatus');
-            syncStatus.style.display = 'block';
+            syncStatus.style.display = 'block'; 
 
-            db.ref('settings').on('value', (snapshot) => {
-                if(snapshot.exists()) {
-                    sysSettings = snapshot.val();
-                    loadSettingsToUI();
-                }
-            });
-
-            db.ref('filaments').on('value', (snapshot) => {
-                filaments = [];
-                snapshot.forEach(child => { filaments.push(child.val()); });
-                renderFilaments();
-            });
-
-            db.ref('depletedFilaments').on('value', (snapshot) => {
-                depletedFilaments = [];
-                snapshot.forEach(child => { depletedFilaments.push(child.val()); });
-                renderDepletedFilaments();
-            });
-
-            db.ref('printRecords').on('value', (snapshot) => {
-                printRecords = [];
-                snapshot.forEach(child => { printRecords.push(child.val()); });
-                renderPrintRecords();
-                updateReportStats();
-            });
-
-            db.ref('hardwareRecords').on('value', (snapshot) => {
-                hardwareRecords = [];
-                snapshot.forEach(child => { hardwareRecords.push(child.val()); });
-                renderHardwareRecords();
-                updateReportStats();
-            });
-
-            db.ref('deletedHardware').on('value', (snapshot) => {
-                deletedHardwareRecords = [];
-                snapshot.forEach(child => { deletedHardwareRecords.push(child.val()); });
-                renderDeletedHardware();
-            });
+            db.ref('settings').on('value', snap => { if(snap.exists()) { sysSettings = snap.val(); loadSettingsToUI(); } });
+            db.ref('filaments').on('value', snap => { filaments = []; snap.forEach(c => filaments.push(c.val())); renderFilaments(); updateReportStats();});
+            db.ref('depletedFilaments').on('value', snap => { depletedFilaments = []; snap.forEach(c => depletedFilaments.push(c.val())); renderDepletedFilaments(); updateReportStats();});
+            db.ref('printRecords').on('value', snap => { printRecords = []; snap.forEach(c => printRecords.push(c.val())); renderPrintRecords(); updateReportStats(); });
+            db.ref('hardwareRecords').on('value', snap => { hardwareRecords = []; snap.forEach(c => hardwareRecords.push(c.val())); renderHardwareRecords(); updateReportStats(); });
+            db.ref('deletedHardware').on('value', snap => { deletedHardwareRecords = []; snap.forEach(c => deletedHardwareRecords.push(c.val())); renderDeletedHardware(); });
 
             setTimeout(() => { syncStatus.style.display = 'none'; }, 2000);
         }
 
         function saveToCloud() {
-            const syncStatus = document.getElementById('syncStatus');
-            syncStatus.style.display = 'block';
-            
+            document.getElementById('syncStatus').style.display = 'block';
             Promise.all([
                 db.ref('settings').set(sysSettings),
                 db.ref('filaments').set(filaments),
@@ -457,11 +388,8 @@
                 db.ref('printRecords').set(printRecords),
                 db.ref('hardwareRecords').set(hardwareRecords),
                 db.ref('deletedHardware').set(deletedHardwareRecords)
-            ]).then(() => {
-                setTimeout(() => { syncStatus.style.display = 'none'; }, 1000);
-            }).catch(error => {
-                alert("雲端同步失敗：" + error);
-            });
+            ]).then(() => { setTimeout(() => { document.getElementById('syncStatus').style.display = 'none'; }, 1000); })
+              .catch(e => alert("雲端同步發生錯誤：" + e));
         }
 
         function loadSettingsToUI() {
@@ -476,11 +404,8 @@
             sysSettings.fixed = parseFloat(document.getElementById('setFixed').value) || 0;
             sysSettings.profit = parseFloat(document.getElementById('setProfit').value) || 0;
             sysSettings.tax = parseFloat(document.getElementById('setTax').value) || 0;
-            saveToCloud();
-            alert("✅ 雲端設定已同步儲存！");
+            saveToCloud(); setTimeout(() => alert("✅ 雲端設定已同步儲存！"), 10);
         }
-
-        document.getElementById('matDate').valueAsDate = new Date();
 
         function switchTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -491,14 +416,7 @@
         }
 
         function getFullDateString() { return new Date().toLocaleString('zh-TW', {hour12: false}); }
-
-        // ★ 取得基礎名稱 (用來比對自動換捲同款耗材)
-        function getBaseName(f) { 
-            if (f.baseName) return f.baseName; 
-            const parts = f.name.split('-'); 
-            if (parts.length >= 3) return parts.slice(0, parts.length - 1).join('-'); 
-            return f.name; 
-        }
+        function getBaseName(f) { if (f.baseName) return f.baseName; const parts = f.name.split('-'); if (parts.length >= 3) return parts.slice(0, parts.length - 1).join('-'); return f.name; }
 
         function toggleCustomType() {
             const sel = document.getElementById('matType'), inp = document.getElementById('customType');
@@ -521,7 +439,6 @@
             if(!confirm(`試算買回金額為：NT$ ${buybackPrice.toFixed(0)}\n\n系統將自動執行：\n1. 增加一筆 $${buybackPrice.toFixed(0)} 的設備支出\n2. 將 ${remainWeight}g 特殊耗材入庫\n\n確定收購嗎？`)) return;
 
             hardwareRecords.push({ id: Date.now(), name: `客備買回: ${name}`, price: buybackPrice, date: getFullDateString(), timestamp: new Date().getTime() });
-            
             filaments.push({
                 id: Date.now()+1, baseName: `(客備) ${name}`, name: `(客備) ${name}`,
                 initialWeight: remainWeight, currentWeight: remainWeight, totalPrice: buybackPrice,
@@ -529,82 +446,73 @@
             });
             
             saveToCloud();
-            
             document.getElementById('bbName').value=''; document.getElementById('bbOrigPrice').value=''; 
             document.getElementById('bbOrigWeight').value=''; document.getElementById('bbRemainWeight').value='';
             setTimeout(() => alert("✅ 買回完成！庫存與支出皆已同步更新。"), 10);
         }
 
         function addFilament() {
-            let type = document.getElementById('matType').value;
+            let type = document.getElementById('matType').value; 
             let color = document.getElementById('matColor').value;
-            const price = parseFloat(document.getElementById('matPrice').value);
+            const price = parseFloat(document.getElementById('matPrice').value); 
             const weight = parseFloat(document.getElementById('matWeight').value);
             const selectedDate = document.getElementById('matDate').value;
 
-            if (type === '其他') { type = document.getElementById('customType').value.trim(); if (!type) return alert("請輸入材質！"); }
-            if (color === '其他') { color = document.getElementById('customColor').value.trim(); if (!color) return alert("請輸入顏色！"); }
-            if(isNaN(weight) || isNaN(price) || !selectedDate) return alert("請填寫完整資訊！");
+            if (type === '其他') { type = document.getElementById('customType').value.trim(); if (!type) return alert("請輸入您自訂的材質！"); }
+            if (color === '其他') { color = document.getElementById('customColor').value.trim(); if (!color) return alert("請輸入您自訂的顏色！"); }
+            if(isNaN(weight) || isNaN(price) || !selectedDate) return alert("⚠️ 請填寫完整資訊！");
 
-            const dateStr = selectedDate.substring(5).replace('-', ''); 
-            
+            let dateStr = "未知";
+            if (selectedDate && selectedDate.length >= 5) dateStr = selectedDate.substring(5).replace(/-/g, '').replace(/\//g, '');
+
             filaments.push({
                 id: Date.now(), 
-                baseName: `${type}-${color}`,
+                baseName: `${type}-${color}`, 
                 name: `${type}-${color}-${dateStr}`,
-                initialWeight: weight, 
-                currentWeight: weight, 
-                totalPrice: price,
-                costPerGram: price / weight, 
-                date: selectedDate 
+                initialWeight: weight, currentWeight: weight, totalPrice: price,
+                costPerGram: price / weight, date: selectedDate 
             });
 
-            saveToCloud();
+            saveToCloud(); 
             document.getElementById('matPrice').value = '';
-            alert("✅ 耗材已成功加入！請在下方的『目前雲端庫存狀態』查看剩餘耗材。");
+            setTimeout(() => alert("✅ 耗材已成功加入！請在下方的『目前雲端庫存狀態』查看剩餘耗材。"), 10);
+        }
+
+        function deleteFilament(id) {
+            if(confirm("確定要【徹底刪除】這筆耗材庫存嗎？")) { filaments = filaments.filter(f => f.id !== id); saveToCloud(); }
         }
 
         function archiveFilament(id) {
             let f = filaments.find(x => x.id === id);
             if(f && confirm(`確定要把【${f.name}】標記為已歸檔嗎？`)) {
-                f.currentWeight = 0;
-                f.depletedAt = getFullDateString();
-                depletedFilaments.push(f); 
-                filaments = filaments.filter(x => x.id !== id);
-                renderFilaments();
-                renderDepletedFilaments();
-                saveToCloud();
-                
+                f.currentWeight = 0; f.depletedAt = getFullDateString();
+                depletedFilaments.push(f); filaments = filaments.filter(x => x.id !== id);
+                renderFilaments(); renderDepletedFilaments(); saveToCloud();
                 setTimeout(() => alert("✅ 歸檔成功！請至『🗃️ 耗材歸檔』查看"), 10);
-            }
-        }
-
-        function deleteFilament(id) {
-            if(confirm("確定要刪除這筆耗材庫存嗎？")) {
-                filaments = filaments.filter(f => f.id !== id);
-                saveToCloud();
             }
         }
 
         function renderFilaments() {
             const tbody = document.getElementById('inventoryList');
+            if(!tbody) return;
             tbody.innerHTML = '';
-            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">雲端目前無庫存</td></tr>'; 
-            
-            filaments.forEach(f => {
-                const statusHtml = f.currentWeight <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
-                const cpg = parseFloat(f.costPerGram) || 0;
-                tbody.innerHTML += `<tr>
-                    <td><strong>${f.name}</strong><br><span style="font-size:12px; color:#888;">入庫日: ${f.date}</span></td>
-                    <td>${cpg.toFixed(3)}</td>
-                    <td><strong>${f.currentWeight.toFixed(0)}</strong> / ${f.initialWeight}</td>
-                    <td>${statusHtml}</td>
-                    <td style="min-width: 100px;">
-                        <button class="btn-warning" style="padding: 4px 8px; font-size:12px; margin-right: 5px; margin-bottom: 5px;" onclick="archiveFilament(${f.id})">歸檔</button>
-                        <button class="btn-danger" style="padding: 4px 8px; font-size:12px;" onclick="deleteFilament(${f.id})">刪除</button>
-                    </td>
-                </tr>`;
-            });
+            if(filaments.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#999;">目前無剩餘庫存耗材</td></tr>'; 
+            else {
+                filaments.forEach(f => {
+                    const statusHtml = f.currentWeight <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
+                    const cpg = parseFloat(f.costPerGram) || 0;
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${f.name}</strong><br><span style="font-size:12px; color:#888;">入庫日: ${f.date}</span></td>
+                        <td>${cpg.toFixed(3)}</td>
+                        <td><strong>${f.currentWeight.toFixed(0)}</strong> / ${f.initialWeight}</td>
+                        <td>${statusHtml}</td>
+                        <td style="min-width: 100px;">
+                            <button class="btn-warning" style="padding: 4px 8px; font-size:12px; margin-right: 5px; margin-bottom: 5px;" onclick="archiveFilament(${f.id})">歸檔</button>
+                            <button class="btn-danger" style="padding: 4px 8px; font-size:12px;" onclick="deleteFilament(${f.id})">刪除</button>
+                        </td>
+                    </tr>`;
+                });
+            }
             updateSelectOptions(); 
         }
 
@@ -612,41 +520,29 @@
             const tbody = document.getElementById('depletedList'); 
             if(!tbody) return;
             tbody.innerHTML = '';
-            if(depletedFilaments.length === 0) { 
-                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">目前無歸檔紀錄</td></tr>'; 
-                return; 
+            if(depletedFilaments.length === 0) tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#999;">目前無歸檔紀錄</td></tr>'; 
+            else {
+                [...depletedFilaments].reverse().forEach(f => {
+                    const cpg = parseFloat(f.costPerGram) || 0;
+                    tbody.innerHTML += `<tr>
+                        <td><strong style="color: #7f8c8d; text-decoration: line-through;">${f.name}</strong></td>
+                        <td style="color: #95a5a6;">${cpg.toFixed(3)}</td>
+                        <td style="color: #95a5a6;">${f.date || '無'}</td>
+                        <td style="color: #e74c3c; font-weight: bold; font-size: 12px;">${f.depletedAt || '無紀錄'}</td>
+                    </tr>`;
+                });
             }
-            [...depletedFilaments].reverse().forEach(f => {
-                const cpg = parseFloat(f.costPerGram) || 0;
-                tbody.innerHTML += `<tr>
-                    <td><strong style="color: #7f8c8d; text-decoration: line-through;">${f.name}</strong></td>
-                    <td style="color: #95a5a6;">${cpg.toFixed(3)}</td>
-                    <td style="color: #95a5a6;">${f.date || '無'}</td>
-                    <td style="color: #e74c3c; font-weight: bold; font-size: 12px;">${f.depletedAt || '無紀錄'}</td>
-                </tr>`;
-            });
         }
 
-        // 更新所有耗材選單
         function updateSelectOptions() {
             let opts = '<option value="">請選擇使用的耗材...</option>';
             if(filaments.length === 0) opts = '<option value="">目前雲端沒有可用耗材</option>';
-            
-            filaments.filter(f => f.currentWeight > 0).forEach(f => {
-                opts += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`;
-            });
-            
+            filaments.filter(f => f.currentWeight > 0).forEach(f => { opts += `<option value="${f.id}">${f.name} (餘 ${f.currentWeight.toFixed(0)}g)</option>`; });
             const hiddenOpt = document.getElementById('hiddenFilOptions');
             if(hiddenOpt) hiddenOpt.innerHTML = opts;
-            
-            document.querySelectorAll('.fil-select').forEach(sel => {
-                const currentVal = sel.value; 
-                sel.innerHTML = opts; 
-                sel.value = currentVal;
-            });
+            document.querySelectorAll('.fil-select').forEach(sel => { const currentVal = sel.value; sel.innerHTML = opts; sel.value = currentVal; });
         }
 
-        // 追加耗材
         function addExtraFilament() {
             const div = document.createElement('div');
             div.className = 'form-row extra-fil-row';
@@ -667,185 +563,111 @@
             document.getElementById('extraFilaments').appendChild(div);
         }
 
-        // ★ 支援多材質與自動換捲的核心邏輯 ★
         function getPrintTaskData() {
-            let totalMatCost = 0, usedFils = [], summaryNames = [], valid = true, errMsg = "";
-            let isAutoSwitched = false; // 紀錄是否觸發自動換捲
-
-            const selects = document.querySelectorAll('.fil-select');
-            const weights = document.querySelectorAll('.fil-weight');
-            let tempInventory = JSON.parse(JSON.stringify(filaments)); 
+            let totalMatCost = 0, usedFils = [], summaryNames = [], valid = true, errMsg = "", isAutoSwitched = false;
+            const selects = document.querySelectorAll('.fil-select'); const weights = document.querySelectorAll('.fil-weight');
+            let tempInventory = JSON.parse(JSON.stringify(filaments));
 
             for(let i = 0; i < selects.length; i++) {
-                const fId = selects[i].value;
-                const w = parseFloat(weights[i].value);
-                
+                const fId = selects[i].value; const w = parseFloat(weights[i].value);
                 if(fId && !isNaN(w)) {
                     let selectedFil = tempInventory.find(x => x.id == fId);
                     if(selectedFil) {
-                        let baseName = getBaseName(selectedFil);
-                        let rem = w; 
+                        let baseName = getBaseName(selectedFil); let rem = w; 
                         let deduct = Math.min(selectedFil.currentWeight, rem);
-                        
-                        // 先扣除選擇的這捲
                         if (deduct > 0) {
-                            rem -= deduct; 
-                            selectedFil.currentWeight -= deduct;
+                            rem -= deduct; selectedFil.currentWeight -= deduct;
                             usedFils.push({ originalId: selectedFil.id, name: selectedFil.name, w: deduct, costPerGram: parseFloat(selectedFil.costPerGram)||0 });
-                            totalMatCost += (deduct * (parseFloat(selectedFil.costPerGram)||0));
-                            summaryNames.push(`${selectedFil.name}(${deduct}g)`);
+                            totalMatCost += (deduct * (parseFloat(selectedFil.costPerGram)||0)); summaryNames.push(`${selectedFil.name}(${deduct}g)`);
                         }
-                        
-                        // 如果還有剩餘沒扣完，啟動【自動換捲】尋找其他同款庫存
                         if (rem > 0) {
                             let others = tempInventory.filter(x => getBaseName(x) === baseName && x.currentWeight > 0 && x.id != selectedFil.id).sort((a,b) => a.id - b.id);
                             for (let o of others) {
                                 if (rem <= 0) break;
-                                let d = Math.min(o.currentWeight, rem);
-                                rem -= d; 
-                                o.currentWeight -= d;
+                                let d = Math.min(o.currentWeight, rem); rem -= d; o.currentWeight -= d;
                                 usedFils.push({ originalId: o.id, name: o.name, w: d, costPerGram: parseFloat(o.costPerGram)||0 });
-                                totalMatCost += (d * (parseFloat(o.costPerGram)||0));
-                                summaryNames.push(`${o.name}(${d}g)`);
-                                isAutoSwitched = true; // 標記已觸發自動換捲
+                                totalMatCost += (d * (parseFloat(o.costPerGram)||0)); summaryNames.push(`${o.name}(${d}g)`);
+                                isAutoSwitched = true;
                             }
                         }
-                        
-                        // 如果同款的所有備份都扣光了還是不夠
-                        if (rem > 0) { 
-                            valid = false; 
-                            errMsg = `【${baseName}】系列總庫存不足！還差 ${rem}g 無法扣除。`; 
-                            break; 
-                        }
+                        if (rem > 0) { valid = false; errMsg = `【${baseName}】系列總庫存不足！還差 ${rem}g 無法扣除。`; break; }
                     }
-                } else if (fId || !isNaN(w)) {
-                    valid = false; 
-                    errMsg = "請確認每一行耗材的名稱與重量都有完整填寫！";
-                }
+                } else if (fId || !isNaN(w)) { valid = false; errMsg = "請填寫完整的耗材與重量！"; }
             }
             return { totalMatCost, usedFils, summaryNames, valid, errMsg, isAutoSwitched };
         }
 
-        // 預先試算
         function previewCost(isFromCheckbox = false) {
-            const data = getPrintTaskData(); 
-            const t = parseFloat(document.getElementById('time').value);
+            const data = getPrintTaskData(); const t = parseFloat(document.getElementById('time').value);
             const applyTax = document.getElementById('applyTax').checked;
-            
-            const riskInput = parseFloat(document.getElementById('printRisk').value); 
-            const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
+            const riskInput = parseFloat(document.getElementById('printRisk').value); const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
 
-            if(!data.valid || data.usedFils.length === 0 || isNaN(t)) { 
-                if(!isFromCheckbox) alert(data.errMsg || "請填妥所有耗材資料與時間以試算！"); 
-                return; 
-            }
+            if(!data.valid || data.usedFils.length === 0 || isNaN(t)) { if(!isFromCheckbox) alert(data.errMsg || "請填妥資料以試算！"); return; }
 
             const baseCost = data.totalMatCost + (t * sysSettings.power) + sysSettings.fixed;
             const preTaxPrice = baseCost * riskMult * (1 + (sysSettings.profit / 100));
-            const taxMult = 1 + (sysSettings.tax / 100); 
-            const finalPrice = preTaxPrice * (applyTax ? taxMult : 1);
+            const taxMult = 1 + (sysSettings.tax / 100); const finalPrice = preTaxPrice * (applyTax ? taxMult : 1);
 
             let formulaStr = `<strong>📝 公式：</strong> [ 耗材費 + 耗電費 + 固定攤提 ] × 風險加成 × 利潤加成`;
             let calcStr = `<strong>🔢 算式：</strong> [ $${data.totalMatCost.toFixed(1)} + $${(t*sysSettings.power).toFixed(1)} + $${sysSettings.fixed} ] × ${riskMult.toFixed(2)} × ${(1+(sysSettings.profit/100)).toFixed(2)}`;
-            if (applyTax) { 
-                formulaStr += ` × 營業稅`; 
-                calcStr += ` × ${taxMult.toFixed(2)} <span style="color:#e67e22; font-weight:bold;">(含稅)</span>`; 
-            }
+            if (applyTax) { formulaStr += ` × 營業稅`; calcStr += ` × ${taxMult.toFixed(2)} <span style="color:#e67e22; font-weight:bold;">(含稅)</span>`; }
 
-            // ★ 新增：視覺上的自動換捲提醒燈號
             let autoSwitchMsg = data.isAutoSwitched ? `<div style="color: #e67e22; font-weight: bold; font-size: 13px; margin-top: 10px; padding: 8px; background: #fdfaf2; border-radius: 6px; border: 1px dashed #f39c12;">🔄 系統偵測：首捲耗材不足，已自動跨捲扣除同款備用耗材！</div>` : '';
 
             document.getElementById('previewBox').style.display = 'block';
-            document.getElementById('previewDetail').innerHTML = `
-                <div style="color: #34495e; font-size: 13px; margin-bottom: 8px;">${formulaStr}</div>
-                <div style="color: #2c3e50; font-size: 14px; background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #bdc3c7;">${calcStr}</div>
-                ${autoSwitchMsg}
-            `;
+            document.getElementById('previewDetail').innerHTML = `<div style="color: #34495e; font-size: 13px; margin-bottom: 8px; text-align: left;">${formulaStr}</div><div style="color: #2c3e50; font-size: 14px; text-align: left; background: #fff; padding: 10px; border-radius: 6px; border: 1px dashed #bdc3c7;">${calcStr}</div>${autoSwitchMsg}`;
             document.getElementById('previewCostDisplay').innerText = `NT$ ${Math.ceil(finalPrice)}`; 
         }
 
-        // 確認儲存
         function addPrintRecord() {
-            const data = getPrintTaskData(); 
-            const modelName = document.getElementById('modelName').value; 
-            const t = parseFloat(document.getElementById('time').value);
-            const status = document.getElementById('printStatus').value; 
-            const applyTax = document.getElementById('applyTax').checked;
-            
-            const riskInput = parseFloat(document.getElementById('printRisk').value); 
-            const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
+            const data = getPrintTaskData(); const modelName = document.getElementById('modelName').value; const t = parseFloat(document.getElementById('time').value);
+            const status = document.getElementById('printStatus').value; const applyTax = document.getElementById('applyTax').checked;
+            const riskInput = parseFloat(document.getElementById('printRisk').value); const riskMult = isNaN(riskInput) ? 1 : (1 + (riskInput / 100));
 
             if(!modelName || !data.valid || data.usedFils.length === 0 || isNaN(t)) return alert(data.errMsg || "請填妥所有資料！");
-            
             const finalPrice = Math.ceil((data.totalMatCost + (t * sysSettings.power) + sysSettings.fixed) * riskMult * (1 + (sysSettings.profit / 100)) * (applyTax ? (1 + (sysSettings.tax / 100)) : 1));
 
-            // 正式扣除庫存
             data.usedFils.forEach(u => {
                 let realF = filaments.find(x => x.id === u.originalId);
                 if (realF) {
                     realF.currentWeight -= u.w;
-                    if (realF.currentWeight <= 0) { 
-                        realF.currentWeight = 0; 
-                        realF.depletedAt = getFullDateString(); 
-                        depletedFilaments.push(realF); 
-                    }
+                    if (realF.currentWeight <= 0) { realF.currentWeight = 0; realF.depletedAt = getFullDateString(); depletedFilaments.push(realF); }
                 }
             });
             filaments = filaments.filter(x => x.currentWeight > 0);
             
-            // 寫入列印紀錄
-            printRecords.push({ 
-                id: Date.now(), 
-                modelName: modelName, 
-                filamentName: data.summaryNames.join(' + '), 
-                weightUsed: data.usedFils.reduce((s, u) => s + u.w, 0), 
-                timeUsed: t, 
-                cost: finalPrice, 
-                taxApplied: applyTax, 
-                riskMult: riskMult, 
-                status: status, 
-                date: getFullDateString(), 
-                timestamp: new Date().getTime() 
-            });
+            printRecords.push({ id: Date.now(), modelName: modelName, filamentName: data.summaryNames.join(' + '), weightUsed: data.usedFils.reduce((s, u) => s + u.w, 0), timeUsed: t, cost: finalPrice, taxApplied: applyTax, riskMult: riskMult, status: status, date: getFullDateString(), timestamp: new Date().getTime() });
 
-            saveToCloud();
+            renderFilaments(); renderDepletedFilaments(); renderPrintRecords(); updateReportStats(); saveToCloud();
             
-            document.getElementById('modelName').value = ''; 
-            document.querySelectorAll('.fil-weight').forEach(el => el.value = '');
-            document.getElementById('extraFilaments').innerHTML = ''; 
-            document.getElementById('time').value = ''; 
-            document.getElementById('printRisk').value = '5'; 
-            document.getElementById('previewBox').style.display = 'none';
+            document.getElementById('modelName').value = ''; document.querySelectorAll('.fil-weight').forEach(el => el.value = '');
+            document.getElementById('extraFilaments').innerHTML = ''; document.getElementById('time').value = ''; 
+            document.getElementById('printRisk').value = '5'; document.getElementById('previewBox').style.display = 'none';
             
             let successMsg = "✅ 雲端儲存成功，耗材庫存已精準扣除！";
             if (data.isAutoSwitched) successMsg += "\n(💡 偵測到跨捲，系統已自動為您更換備用庫存)";
-            alert(successMsg);
+            setTimeout(() => alert(successMsg), 10);
         }
 
         function toggleStatus(id) {
             const r = printRecords.find(x => x.id === id);
-            if(r) { r.status = r.status === 'unsold' ? 'sold' : 'unsold'; saveToCloud(); }
+            if(r) { r.status = r.status === 'unsold' ? 'sold' : 'unsold'; renderPrintRecords(); updateReportStats(); saveToCloud(); }
         }
 
         function deleteRecord(id) {
-            if(confirm("確定刪除此紀錄？(耗材不會自動補回庫存喔)")) {
-                printRecords = printRecords.filter(x => x.id !== id); saveToCloud();
-            }
+            if(confirm("確定刪除此紀錄？(耗材不會自動補回庫存喔)")) { printRecords = printRecords.filter(x => x.id !== id); renderPrintRecords(); updateReportStats(); saveToCloud(); }
         }
 
         function renderPrintRecords() {
             const list = document.getElementById('printRecordList'); list.innerHTML = '';
             [...printRecords].reverse().forEach(r => {
-                if (!r.status) r.status = 'unsold'; 
-                const isSold = r.status === 'sold';
+                if (!r.status) r.status = 'unsold'; const isSold = r.status === 'sold';
                 const taxTag = r.taxApplied ? `<span style="background:#f39c12; color:white; padding:2px 6px; border-radius:4px; font-size:11px; margin-left:5px;">含稅B2B</span>` : '';
-                
-                const riskPct = r.riskMult ? Math.round((r.riskMult - 1) * 100) : 5; 
-                let riskTag = '';
+                const riskPct = r.riskMult ? Math.round((r.riskMult - 1) * 100) : 5; let riskTag = '';
                 if (riskPct <= 5) riskTag = `<span style="color:#27ae60; font-size:13px; font-weight:normal;">🟢風險 ${riskPct}%</span>`;
                 else if (riskPct <= 15) riskTag = `<span style="color:#f39c12; font-size:13px; font-weight:normal;">🟡風險 ${riskPct}%</span>`;
                 else riskTag = `<span style="color:#e74c3c; font-size:13px; font-weight:normal;">🔴風險 ${riskPct}%</span>`;
-
+                
                 list.innerHTML += `
                     <div class="card ${isSold ? 'sold-card' : ''}" style="border-left: 4px solid #3498db; margin-bottom: 15px; padding: 15px;">
                         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
@@ -857,7 +679,7 @@
                         </div>
                         <div style="font-size: 12px; color: #95a5a6; margin-bottom: 8px;">${r.date}</div>
                         <div style="font-size: 14px; color: #555; line-height: 1.6;">
-                            耗材：${r.filamentName} <br> 總重：${r.weightUsed}g | 工時：${r.timeUsed}h<br>
+                            耗材組合：${r.filamentName}<br>總消耗：${r.weightUsed}g | 工時：${r.timeUsed}h<br>
                             <strong style="color:#2c3e50; font-size: 15px;">系統定價：NT$ ${r.cost}</strong>
                         </div>
                     </div>`;
@@ -865,29 +687,22 @@
         }
 
         function addHardware() {
-            const name = document.getElementById('hwName').value;
-            const price = parseFloat(document.getElementById('hwPrice').value);
+            const name = document.getElementById('hwName').value; const price = parseFloat(document.getElementById('hwPrice').value);
             if(!name || isNaN(price)) return alert("請填寫項目與金額！");
-
-            hardwareRecords.push({
-                id: Date.now(), name: name, price: price, date: getFullDateString(), timestamp: new Date().getTime()
-            });
-
-            saveToCloud();
+            hardwareRecords.push({ id: Date.now(), name: name, price: price, date: getFullDateString(), timestamp: new Date().getTime() });
+            renderHardwareRecords(); updateReportStats(); saveToCloud();
             document.getElementById('hwName').value = ''; document.getElementById('hwPrice').value = '';
+            setTimeout(() => alert("✅ 新增設備支出成功。"), 10);
         }
 
         function deleteHardware(id) {
-            const record = hardwareRecords.find(r => r.id === id);
-            if(!record) return;
-
-            if(confirm(`⚠️ 確定要刪除設備【${record.name}】嗎？\n(將同步更新雲端報表，並記錄由「${currentUser}」刪除)`)) {
+            const record = hardwareRecords.find(r => r.id === id); if(!record) return;
+            if(confirm(`⚠️ 確定要刪除設備【${record.name}】嗎？`)) {
                 hardwareRecords = hardwareRecords.filter(r => r.id !== id);
-                record.deletedBy = currentUser;
-                record.deletedAt = getFullDateString();
-                deletedHardwareRecords.push(record);
-                saveToCloud();
-                alert(`✅ 雲端刪除成功。`);
+                record.deletedBy = currentUser; record.deletedAt = getFullDateString();
+                deletedHardwareRecords.push(record); 
+                renderHardwareRecords(); renderDeletedHardware(); updateReportStats(); saveToCloud(); 
+                setTimeout(() => alert(`✅ 雲端刪除成功。`), 10);
             }
         }
 
@@ -896,74 +711,71 @@
             [...hardwareRecords].reverse().forEach(r => {
                 list.innerHTML += `
                     <div style="background: #fdfaf2; padding: 12px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #f39c12; display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <strong>${r.name}</strong> <span style="font-size:12px; color:#888;">(${r.date})</span><br>
-                            <strong style="color:#c0392b;">NT$ ${r.price.toFixed(0)}</strong>
-                        </div>
+                        <div><strong>${r.name}</strong> <span style="font-size:12px; color:#888;">(${r.date})</span><br><strong style="color:#c0392b;">NT$ ${r.price.toFixed(0)}</strong></div>
                         <button class="btn-danger" style="margin:0; padding: 6px 12px; font-size:13px;" onclick="deleteHardware(${r.id})">刪除</button>
                     </div>`;
             });
         }
 
         function renderDeletedHardware() {
-            const list = document.getElementById('deletedHardwareList'); 
-            list.innerHTML = '';
-            if(deletedHardwareRecords.length === 0) {
-                list.innerHTML = '<div style="color:#999; font-size: 13px;">目前沒有刪除紀錄。</div>'; return;
-            }
+            const list = document.getElementById('deletedHardwareList'); list.innerHTML = '';
+            if(deletedHardwareRecords.length === 0) { list.innerHTML = '<div style="color:#999; font-size: 13px;">目前沒有刪除紀錄。</div>'; return; }
             [...deletedHardwareRecords].reverse().forEach(r => {
                 list.innerHTML += `
                     <div style="background: #fff; padding: 10px; border: 1px dashed #ccc; margin-bottom: 8px; border-radius: 4px;">
-                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;">
-                            <span style="text-decoration: line-through; color: #7f8c8d;">${r.name} (NT$ ${r.price})</span>
-                            <span style="font-size:12px; color:#e74c3c; font-weight:bold;">刪除者：${r.deletedBy}</span>
-                        </div>
+                        <div style="display:flex; justify-content:space-between; margin-bottom: 4px;"><span style="text-decoration: line-through; color: #7f8c8d;">${r.name} (NT$ ${r.price})</span><span style="font-size:12px; color:#e74c3c; font-weight:bold;">刪除者：${r.deletedBy}</span></div>
                         <div style="font-size:11px; color:#bdc3c7;">原本購買日: ${r.date} | 刪除時間: ${r.deletedAt}</div>
                     </div>`;
             });
         }
 
+        // ★ 新增：計算耗材採購總額
         function updateReportStats() {
-            const range = document.getElementById('reportTimeRange').value;
-            const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
-
+            const range = document.getElementById('reportTimeRange').value; const now = new Date(); const currentYear = now.getFullYear(); const currentMonth = now.getMonth();
+            
             let fPrints = printRecords, fHW = hardwareRecords;
+            let fFils = filaments.concat(depletedFilaments); // 將庫存與歸檔耗材合併計算總花費
 
             if (range === 'this_month') {
                 fPrints = printRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear && new Date(r.timestamp||r.id).getMonth()===currentMonth);
                 fHW = hardwareRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear && new Date(r.timestamp||r.id).getMonth()===currentMonth);
+                fFils = fFils.filter(r => {
+                    let d = new Date(r.date); 
+                    if(isNaN(d.getTime())) d = new Date(r.id); // 防呆：如果日期格式錯誤改抓 ID 戳記
+                    return d.getFullYear()===currentYear && d.getMonth()===currentMonth;
+                });
             } else if (range === 'this_year') {
                 fPrints = printRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear);
                 fHW = hardwareRecords.filter(r => new Date(r.timestamp||r.id).getFullYear()===currentYear);
+                fFils = fFils.filter(r => {
+                    let d = new Date(r.date); if(isNaN(d.getTime())) d = new Date(r.id);
+                    return d.getFullYear()===currentYear;
+                });
             }
 
-            let uCost = 0, sRev = 0, hCost = 0;
-            fPrints.forEach(r => r.status === 'sold' ? sRev+=r.cost : uCost+=r.cost);
+            let uCost = 0, sRev = 0, hCost = 0, filCost = 0;
+            fPrints.forEach(r => r.status === 'sold' ? sRev+=r.cost : uCost+=r.cost); 
             fHW.forEach(r => hCost+=r.price);
+            fFils.forEach(r => filCost += (r.totalPrice || 0)); // 計算耗材採購花費
 
-            document.getElementById('reportSoldRevenue').innerText = sRev.toFixed(0);
+            document.getElementById('reportSoldRevenue').innerText = sRev.toFixed(0); 
             document.getElementById('reportUnsoldCost').innerText = uCost.toFixed(0);
-            document.getElementById('reportHardwareCost').innerText = hCost.toFixed(0);
+            document.getElementById('reportHardwareCost').innerText = hCost.toFixed(0); 
+            document.getElementById('reportFilamentCost').innerText = filCost.toFixed(0); 
             document.getElementById('reportNetProfit').innerText = (sRev - hCost).toFixed(0);
         }
 
         function exportCSV(type) {
             const range = document.getElementById('reportTimeRange').options[document.getElementById('reportTimeRange').selectedIndex].text;
             let csvContent = "\uFEFF", filename = "";
-
             if (type === 'print') {
-                csvContent += "模型名稱,使用耗材組合,消耗重量(g),列印時間(h),類型,風險係數,系統定價(NT$),銷售狀態,紀錄日期\n";
-                printRecords.forEach(r => {
-                    const riskPct = r.riskMult ? Math.round((r.riskMult - 1) * 100) : 5;
-                    csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${riskPct},${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`;
-                });
+                csvContent += "模型名稱,使用耗材組合,消耗總重量(g),列印時間(h),類型,風險係數,系統定價(NT$),銷售狀態,紀錄日期\n";
+                printRecords.forEach(r => { const riskPct = r.riskMult ? Math.round((r.riskMult - 1) * 100) : 5; csvContent += `"${r.modelName}","${r.filamentName}",${r.weightUsed},${r.timeUsed},"${r.taxApplied?'企業含稅':'一般未稅'}",${riskPct},${r.cost},"${r.status==='sold'?'已售出':'現貨未售'}","${r.date}"\n`; });
                 filename = `KR小舖_雲端列印與銷售紀錄_${range}.csv`;
             } else if (type === 'hardware') {
-                csvContent += "設備項目名稱,花費金額(NT$),紀錄日期\n";
-                hardwareRecords.forEach(r => csvContent += `"${r.name}",${r.price},"${r.date}"\n`);
+                csvContent += "設備項目名稱,花費金額(NT$),紀錄日期\n"; hardwareRecords.forEach(r => csvContent += `"${r.name}",${r.price},"${r.date}"\n`);
                 filename = `KR小舖_雲端設備支出紀錄_${range}.csv`;
             }
-
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob));
             link.setAttribute("download", filename); document.body.appendChild(link); link.click(); document.body.removeChild(link);
