@@ -108,4 +108,23 @@
             <div class="tab-btn" onclick="switchTab('settingsTab', this)">⚙️ 公式設定</div>
         </div>
 
-        <div id
+        <div id="settingsTab" class="tab-content">
+            <div class="card settings-card">
+                <h2>⚙️ 成本與公式參數設定 (雲端同步)</h2>
+                <div class="form-row">
+                    <div class="form-col"><label>耗電費率 (NT$/小時)</label><input type="number" id="setPower" step="0.1"></div>
+                    <div class="form-col"><label>固定攤提/損耗 (NT$)</label><input type="number" id="setFixed" step="0.01"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-col"><label>預設利潤加成 (%)</label><input type="number" id="setProfit"></div>
+                    <div class="form-col"><label>營業稅率/發票稅 (%)</label><input type="number" id="setTax"></div>
+                </div>
+                <button class="btn-dark" onclick="saveSettings()">💾 儲存並同步至雲端</button>
+            </div>
+        </div>
+
+        <!-- ================= 耗材入庫頁籤 ================= -->
+        <div id="inventoryTab" class="tab-content active">
+            
+            <div class="card buyback-card" style="margin-top: 0;">
+                <h2 style="color: #e84393; margin-bottom: 5px;">🤝 特殊色客
