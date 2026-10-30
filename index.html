@@ -169,7 +169,7 @@
                     </div>
                 </div>
                 <div class="form-row">
-                    <!-- ★ 新增運費/加錢欄位 ★ -->
+                    <!-- ★ 運費/加錢欄位 ★ -->
                     <div class="form-col"><label>購入價 (NT$)</label><input type="number" id="matPrice" placeholder="例如 450"></div>
                     <div class="form-col"><label>運費/加錢 (NT$)</label><input type="number" id="matShipping" placeholder="例如 60 (選填)"></div>
                     <div class="form-col"><label>初始重量 (g)</label><input type="number" id="matWeight" value="1000"></div>
@@ -184,7 +184,6 @@
                 <div class="table-container">
                     <table>
                         <thead>
-                            <!-- ★ 新增總成本顯示 ★ -->
                             <tr><th>耗材名稱</th><th>總成本(含運)</th><th>單位成本 (/g)</th><th>剩餘重量 (G)</th><th>狀態</th><th>操作</th></tr>
                         </thead>
                         <tbody id="inventoryList"></tbody>
@@ -371,6 +370,7 @@
 
             db.ref('settings').on('value', snap => { if(snap.exists()) { sysSettings = snap.val(); loadSettingsToUI(); } });
             
+            // ★ 防呆機制：強制轉換所有舊資料為數字格式 ★
             db.ref('filaments').on('value', snap => { 
                 filaments = []; 
                 snap.forEach(c => { 
@@ -549,7 +549,7 @@
                     const cw = parseFloat(f.currentWeight) || 0;
                     const iw = parseFloat(f.initialWeight) || 0;
                     const cpg = parseFloat(f.costPerGram) || 0;
-                    const totalCost = parseFloat(f.totalPrice || f.originalPrice || 0); // 支援舊資料
+                    const totalCost = parseFloat(f.totalPrice || f.originalPrice || 0);
                     
                     const statusHtml = cw <= 200 ? '<span class="status-badge status-low">存量偏低</span>' : '<span class="status-badge status-ok">充足</span>';
                     
