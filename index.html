@@ -421,6 +421,18 @@
                         hardwareRecords.push(r);
                     }
                 }); 
+                // 額外防護：若用 forEach 漏抓，直接強制用迴圈掃一次
+                if (hardwareRecords.length === 0 && snap.val()) {
+                    const rawData = snap.val();
+                    if (Array.isArray(rawData)) {
+                        rawData.forEach(r => {
+                            if(r && typeof r === 'object') {
+                                r.price = parseFloat(r.price) || 0;
+                                hardwareRecords.push(r);
+                            }
+                        });
+                    }
+                }
                 renderHardwareRecords(); updateReportStats(); 
             });
 
